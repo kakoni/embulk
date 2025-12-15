@@ -55,10 +55,6 @@ public class SelfrunTest {
     public void testNoArgument() throws Exception {
         List<String> args = execute();
         assertEquals(Arrays.asList(
-                         "-XX:+AggressiveOpts",
-                         "-XX:+TieredCompilation",
-                         "-XX:TieredStopAtLevel=1",
-                         "-Xverify:none",
                          "-jar",
                          testSelfrunFile.getAbsolutePath()),
                      args);
@@ -68,10 +64,6 @@ public class SelfrunTest {
     public void testArguments() throws Exception {
         List<String> args = execute("a1", "a2", "\"a3=v3\"");
         assertEquals(Arrays.asList(
-                         "-XX:+AggressiveOpts",
-                         "-XX:+TieredCompilation",
-                         "-XX:TieredStopAtLevel=1",
-                         "-Xverify:none",
                          "-jar",
                          testSelfrunFile.getAbsolutePath(),
                          "a1",
@@ -84,8 +76,7 @@ public class SelfrunTest {
     public void testRun() throws Exception {
         List<String> args = execute("run", "a1");
         assertEquals(Arrays.asList(
-                         "-XX:+AggressiveOpts",
-                         "-XX:+UseConcMarkSweepGC",
+                         "-XX:+UseG1GC",
                          "-jar",
                          testSelfrunFile.getAbsolutePath(),
                          "run",
@@ -97,8 +88,7 @@ public class SelfrunTest {
     public void testJpO() throws Exception {
         List<String> args = execute("-J+O", "a1", "a2");
         assertEquals(Arrays.asList(
-                         "-XX:+AggressiveOpts",
-                         "-XX:+UseConcMarkSweepGC",
+                         "-XX:+UseG1GC",
                          "-jar",
                          testSelfrunFile.getAbsolutePath(),
                          "a1",
@@ -110,10 +100,6 @@ public class SelfrunTest {
     public void testJmO() throws Exception {
         List<String> args = execute("-J-O", "a1", "a2");
         assertEquals(Arrays.asList(
-                         "-XX:+AggressiveOpts",
-                         "-XX:+TieredCompilation",
-                         "-XX:TieredStopAtLevel=1",
-                         "-Xverify:none",
                          "-jar",
                          testSelfrunFile.getAbsolutePath(),
                          "a1",
@@ -125,10 +111,6 @@ public class SelfrunTest {
     public void testR1() throws Exception {
         List<String> args = execute("-Rr1", "a1", "a2");
         assertEquals(Arrays.asList(
-                         "-XX:+AggressiveOpts",
-                         "-XX:+TieredCompilation",
-                         "-XX:TieredStopAtLevel=1",
-                         "-Xverify:none",
                          "-jar",
                          testSelfrunFile.getAbsolutePath(),
                          "-Rr1",
@@ -141,10 +123,6 @@ public class SelfrunTest {
     public void testR2() throws Exception {
         List<String> args = execute("\"-Rr1=v1\"", "\"-Rr2=v2\"", "a1", "a2");
         assertEquals(Arrays.asList(
-                         "-XX:+AggressiveOpts",
-                         "-XX:+TieredCompilation",
-                         "-XX:TieredStopAtLevel=1",
-                         "-Xverify:none",
                          "-jar",
                          testSelfrunFile.getAbsolutePath(),
                          "-Rr1=v1",
@@ -158,8 +136,7 @@ public class SelfrunTest {
     public void testRRun() throws Exception {
         List<String> args = execute("-Rr1", "run", "a1");
         assertEquals(Arrays.asList(
-                         "-XX:+AggressiveOpts",
-                         "-XX:+UseConcMarkSweepGC",
+                         "-XX:+UseG1GC",
                          "-jar",
                          testSelfrunFile.getAbsolutePath(),
                          "-Rr1",
@@ -172,10 +149,6 @@ public class SelfrunTest {
     public void testJ1() throws Exception {
         List<String> args = execute("-J-Dj1", "a1", "a2");
         assertEquals(Arrays.asList(
-                         "-XX:+AggressiveOpts",
-                         "-XX:+TieredCompilation",
-                         "-XX:TieredStopAtLevel=1",
-                         "-Xverify:none",
                          "-Dj1",
                          "-jar",
                          testSelfrunFile.getAbsolutePath(),
@@ -188,10 +161,6 @@ public class SelfrunTest {
     public void testJ2() throws Exception {
         List<String> args = execute("\"-J-Dj1=v1\"", "\"-J-Dj2=v2\"", "a1", "a2");
         assertEquals(Arrays.asList(
-                         "-XX:+AggressiveOpts",
-                         "-XX:+TieredCompilation",
-                         "-XX:TieredStopAtLevel=1",
-                         "-Xverify:none",
                          "-Dj1=v1",
                          "-Dj2=v2",
                          "-jar",
@@ -206,10 +175,6 @@ public class SelfrunTest {
     public void testJR() throws Exception {
         List<String> args = execute("-Jj1", "-Rr1", "a1", "a2");
         assertEquals(Arrays.asList(
-                         "-XX:+AggressiveOpts",
-                         "-XX:+TieredCompilation",
-                         "-XX:TieredStopAtLevel=1",
-                         "-Xverify:none",
                          "j1",
                          "-jar",
                          testSelfrunFile.getAbsolutePath(),
@@ -229,10 +194,6 @@ public class SelfrunTest {
 
         List<String> args = execute("-J", javaArgsFile.getAbsolutePath(), "a1", "a2");
         assertEquals(Arrays.asList(
-                         "-XX:+AggressiveOpts",
-                         "-XX:+TieredCompilation",
-                         "-XX:TieredStopAtLevel=1",
-                         "-Xverify:none",
                          "j1",
                          "j2",
                          "j3",

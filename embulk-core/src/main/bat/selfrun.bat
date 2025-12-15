@@ -13,9 +13,9 @@ echo. 1>&2
 echo  Get ready for the removal by running Embulk with your own 'java' command line. 1>&2
 echo  Running Embulk with your own 'java' command line has already been available. 1>&2
 echo. 1>&2
-echo  For instance in Java 1.8 : 1>&2
-echo   java -XX:+AggressiveOpts -XX:+UseConcMarkSweepGC -jar embulk-X.Y.Z.jar run ... 1>&2
-echo   java -XX:+AggressiveOpts -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Xverify:none -jar embulk-X.Y.Z.jar guess ... 1>&2
+echo  For instance in Java 17 : 1>&2
+echo   java -XX:+UseG1GC -jar embulk-X.Y.Z.jar run ... 1>&2
+echo   java -jar embulk-X.Y.Z.jar guess ... 1>&2
 echo. 1>&2
 echo  See https://github.com/embulk/embulk/issues/1496 for the details. 1>&2
 echo ================================================================================ 1>&2
@@ -53,18 +53,14 @@ if "%overwrite_optimize%" == "true" (
 )
 
 for /f "delims=" %%w in ('java -fullversion 2^>^&1') do set java_fullversion=%%w
-echo %java_fullversion% | find " full version ""1.7" > NUL
-if not ERRORLEVEL 1 (set java_version=7)
-echo %java_fullversion% | find " full version ""1.8" > NUL
-if not ERRORLEVEL 1 (set java_version=8)
-if not defined java_version (set java_version=0)
+set java_version=0
+for %%v in (17 18 19 20 21 22 23 24 25 26 27 28 29) do (
+    echo %java_fullversion% | find " full version ""%%v" > NUL
+    if not ERRORLEVEL 1 (set java_version=%%v)
+)
 
-if %java_version% EQU 7 (
-    echo [ERROR] Embulk no longer supports Java 1.7. 1>&2
-    exit 1
-
-) else if %java_version% EQU 8 (
-    rem Do nothing for Java 8
+if %java_version% GEQ 17 (
+    rem Java 17+ accepted
 
 ) else (
     echo [ERROR] The Java version is not recognized by the self-executable single 'embulk' command. 1>&2
@@ -72,15 +68,16 @@ if %java_version% EQU 7 (
     echo [ERROR] 1>&2
     echo [ERROR] Build your own 'java' command line instead of running Embulk as a single command. 1>&2
     echo [ERROR] 1>&2
+    echo [ERROR] Embulk requires Java 17 or later. 1>&2
     echo [ERROR] See https://github.com/embulk/embulk/issues/1496 for the details. 1>&2
     exit 1
 
 )
 
 if "%optimize%" == "true" (
-    set java_args=-XX:+AggressiveOpts -XX:+UseConcMarkSweepGC %java_args%
+    set java_args=-XX:+UseG1GC %java_args%
 ) else (
-    set java_args=-XX:+AggressiveOpts -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Xverify:none %java_args%
+    set java_args=%java_args%
 )
 
 java %java_args% -jar %this% %jruby_args% %args%

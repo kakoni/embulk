@@ -1,20 +1,21 @@
 package org.embulk.deps.config;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.io.IOException;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.node.ObjectNode;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.embulk.spi.unit.ToStringMap;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.exc.StreamReadException;
+import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.ValueDeserializer;
 
 @Deprecated
 public final class ToStringMapJacksonModule extends SimpleModule {
@@ -22,30 +23,28 @@ public final class ToStringMapJacksonModule extends SimpleModule {
         this.addDeserializer(ToStringMap.class, new ToStringMapDeserializer());
     }
 
-    private static class ToStringMapDeserializer extends JsonDeserializer<ToStringMap> {
+    private static class ToStringMapDeserializer extends ValueDeserializer<ToStringMap> {
         @Override
         public ToStringMap deserialize(
                 final JsonParser jsonParser,
                 final DeserializationContext context)
-                throws JsonMappingException {
+                throws DatabindException {
             final JsonNode jsonNode;
             try {
                 jsonNode = OBJECT_MAPPER.readTree(jsonParser);
-            } catch (final JsonParseException ex) {
-                throw JsonMappingException.from(jsonParser, "Failed to parse JSON.", ex);
-            } catch (final JsonProcessingException ex) {
-                throw JsonMappingException.from(jsonParser, "Failed to process JSON in parsing.", ex);
-            } catch (final IOException ex) {
-                throw JsonMappingException.from(jsonParser, "Failed to read JSON in parsing.", ex);
+            } catch (final StreamReadException ex) {
+                throw DatabindException.from(jsonParser, "Failed to parse JSON.", ex);
+            } catch (final JacksonException ex) {
+                throw DatabindException.from(jsonParser, "Failed to process JSON in parsing.", ex);
             }
 
             if (jsonNode == null || !jsonNode.isObject()) {
-                throw JsonMappingException.from(jsonParser, "ToStringMap expects a JSON object node.");
+                throw DatabindException.from(jsonParser, "ToStringMap expects a JSON object node.");
             }
             final ObjectNode node = (ObjectNode) jsonNode;
 
             final HashMap<String, String> built = new HashMap<String, String>();
-            for (final Map.Entry<String, JsonNode> entry : (Iterable<Map.Entry<String, JsonNode>>) () -> node.fields()) {
+            for (final Map.Entry<String, JsonNode> entry : node.properties()) {
                 final JsonNode value = entry.getValue();
                 if (value == null || value.isNull()) {
                     built.put(entry.getKey(), "null");
@@ -56,6 +55,8 @@ public final class ToStringMapJacksonModule extends SimpleModule {
             return ToStringMap.of(Collections.unmodifiableMap(built));
         }
 
-        private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+        private static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder()
+                .disable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+                .build();
     }
 }

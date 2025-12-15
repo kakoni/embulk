@@ -1,10 +1,11 @@
 package org.embulk.deps.config;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 import org.embulk.config.ConfigDiff;
 import org.embulk.config.ConfigException;
 import org.embulk.config.ConfigSource;
@@ -22,31 +23,35 @@ public class ModelManagerDelegateImpl extends ModelManagerDelegate {
     private final ObjectMapper configObjectMapper;  // configObjectMapper uses different TaskDeserializer
 
     public ModelManagerDelegateImpl() {
-        this.objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new ColumnConfigJacksonModule(this));
-        objectMapper.registerModule(new SchemaConfigJacksonModule(this));
-        objectMapper.registerModule(new PluginTypeJacksonModule());
-        objectMapper.registerModule(new ProcessTaskJacksonModule(this));
-        objectMapper.registerModule(new ResumeStateJacksonModule(this));
-        objectMapper.registerModule(new TimestampJacksonModule());  // Deprecated. TBD to remove or not.
-        objectMapper.registerModule(new TimestampFormatJacksonModule());
-        objectMapper.registerModule(new ByteSizeJacksonModule());
-        objectMapper.registerModule(new CharsetJacksonModule());
-        objectMapper.registerModule(new LocalFileJacksonModule());
-        objectMapper.registerModule(new ToStringJacksonModule());
-        objectMapper.registerModule(new ToStringMapJacksonModule());
-        objectMapper.registerModule(new TypeJacksonModule());
-        objectMapper.registerModule(new ColumnJacksonModule());
-        objectMapper.registerModule(new SchemaJacksonModule());
-        objectMapper.registerModule(new Jdk8Module());  // jackson-datatype-jdk8
-        this.configObjectMapper = objectMapper.copy();
+        final JsonMapper baseMapper = JsonMapper.builder()
+                .disable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+                .addModule(new ColumnConfigJacksonModule(this))
+                .addModule(new SchemaConfigJacksonModule(this))
+                .addModule(new PluginTypeJacksonModule())
+                .addModule(new ProcessTaskJacksonModule(this))
+                .addModule(new ResumeStateJacksonModule(this))
+                .addModule(new TimestampJacksonModule())  // Deprecated. TBD to remove or not.
+                .addModule(new TimestampFormatJacksonModule())
+                .addModule(new ByteSizeJacksonModule())
+                .addModule(new CharsetJacksonModule())
+                .addModule(new LocalFileJacksonModule())
+                .addModule(new ToStringJacksonModule())
+                .addModule(new ToStringMapJacksonModule())
+                .addModule(new TypeJacksonModule())
+                .addModule(new ColumnJacksonModule())
+                .addModule(new SchemaJacksonModule())  // jackson-datatype-jdk8
+                .addModule(new DataSourceSerDe.SerDeModule(this))
+                .build();
 
-        objectMapper.registerModule(new TaskSerDe.TaskSerializerModule(objectMapper));
-        objectMapper.registerModule(new TaskSerDe.TaskDeserializerModule(objectMapper, this));
-        objectMapper.registerModule(new DataSourceSerDe.SerDeModule(this));
-        configObjectMapper.registerModule(new TaskSerDe.TaskSerializerModule(configObjectMapper));
-        configObjectMapper.registerModule(new TaskSerDe.ConfigTaskDeserializerModule(configObjectMapper, this));
-        configObjectMapper.registerModule(new DataSourceSerDe.SerDeModule(this));
+        this.objectMapper = baseMapper.rebuild()
+                .addModule(new TaskSerDe.TaskSerializerModule(baseMapper))
+                .addModule(new TaskSerDe.TaskDeserializerModule(baseMapper, this))
+                .build();
+
+        this.configObjectMapper = baseMapper.rebuild()
+                .addModule(new TaskSerDe.TaskSerializerModule(baseMapper))
+                .addModule(new TaskSerDe.ConfigTaskDeserializerModule(baseMapper, this))
+                .build();
     }
 
     @Override

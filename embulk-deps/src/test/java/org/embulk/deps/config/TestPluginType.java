@@ -5,9 +5,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import java.util.Properties;
 import org.embulk.EmbulkSystemProperties;
 import org.embulk.plugin.DefaultPluginType;
@@ -105,8 +105,8 @@ public class TestPluginType {
         mapping.put("name", "e");
         mapping.put("group", "org.embulk.foobar");
         mapping.put("version", "0.1.2");
-        mapping.put("exclude_dependencies", excludeDependencies);
-        mapping.put("override_dependencies", overrideDependencies);
+        mapping.set("exclude_dependencies", excludeDependencies);
+        mapping.set("override_dependencies", overrideDependencies);
 
         PluginType type = PluginTypeJacksonModule.createFromObjectNodeForTesting(mapping);
         assertTrue(type instanceof MavenPluginType);

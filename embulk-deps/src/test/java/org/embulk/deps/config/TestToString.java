@@ -3,12 +3,12 @@ package org.embulk.deps.config;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import java.io.IOException;
 import org.embulk.spi.unit.ToString;
 import org.junit.Test;
+import tools.jackson.databind.DatabindException;
 
 public class TestToString {
     @Test
@@ -27,7 +27,7 @@ public class TestToString {
     private static void assertMappingException(final String inputJson) throws IOException {
         try {
             MAPPER.readValue(inputJson, ToString.class);
-        } catch (final JsonMappingException ex) {
+        } catch (final DatabindException ex) {
             return;
         }
         fail("JsonMappingException is expected.");
@@ -48,13 +48,8 @@ public class TestToString {
     private static final ObjectMapper MAPPER;
 
     static {
-        MAPPER = new ObjectMapper();
-        MAPPER.registerModule(new Jdk8Module());
-        registerToStringJacksonModule(MAPPER);
-    }
-
-    @SuppressWarnings("deprecation")
-    private static void registerToStringJacksonModule(final ObjectMapper mapper) {
-        mapper.registerModule(new ToStringJacksonModule());
+        MAPPER = JsonMapper.builder()
+                .addModule(new ToStringJacksonModule())
+                .build();
     }
 }

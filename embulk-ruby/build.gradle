@@ -33,7 +33,7 @@ repositories {
 }
 
 dependencies {
-    jruby "org.jruby:jruby-complete:9.1.15.0"
+    jruby "org.jruby:jruby-complete:9.4.14.0"
     rubyTest project(":embulk-core")
     rubyTest project(":embulk-deps")
 }
@@ -78,7 +78,11 @@ task installDependencyGems(type: JavaExec, dependsOn: "gemContents") {
     workingDir = file("${projectDir}/build/gemContents");
     classpath = configurations.jruby
     main = "org.jruby.Main"
-    args = ["-rjars/setup", "-S", "gem", "install", "msgpack:1.1.0"]
+    args = ["-rjars/setup", "-S", "gem", "install", "msgpack:1.7.2"]
+    jvmArgs(
+            "--add-opens=java.base/java.security.cert=ALL-UNNAMED",
+            "--add-opens=java.base/sun.security.util=ALL-UNNAMED",
+            "--add-opens=java.base/sun.security.x509=ALL-UNNAMED")
     environment "GEM_HOME": "${buildDir}/dependencyGems"
     // TODO: Remove this environment variable DEBUG_RESOLVER once a newer OpenJDK is available.
     // This environment variable is necessary to avoid `gem install` error on a Windows in GitHub Actions.
@@ -99,6 +103,10 @@ task rubyTest(type: JavaExec, dependsOn: [
     classpath = configurations.jruby + configurations.rubyTest
     main = "org.jruby.Main"
     args = ["-Ilib", "-Itest", "--debug", "./test/vanilla/run-test.rb"]
+    jvmArgs(
+            "--add-opens=java.base/java.security.cert=ALL-UNNAMED",
+            "--add-opens=java.base/sun.security.util=ALL-UNNAMED",
+            "--add-opens=java.base/sun.security.x509=ALL-UNNAMED")
     systemProperty "deps_classpath", project(":embulk-deps").sourceSets.main.runtimeClasspath.files.join(File.pathSeparator)
     environment "GEM_HOME": "${buildDir}/dependencyGems"
 }
@@ -110,6 +118,10 @@ task gem(type: JavaExec, dependsOn: "gemContents") {
     classpath = configurations.jruby
     main = "org.jruby.Main"
     args = ["-rjars/setup", "-S", "gem", "build", "embulk.gemspec"]
+    jvmArgs(
+            "--add-opens=java.base/java.security.cert=ALL-UNNAMED",
+            "--add-opens=java.base/sun.security.util=ALL-UNNAMED",
+            "--add-opens=java.base/sun.security.x509=ALL-UNNAMED")
     doLast {
         mkdir("${buildDir}/gems")
         ant.move file: "${projectDir}/build/gemContents/embulk-${ruby_version}-java.gem", todir: "${buildDir}/gems"
@@ -122,5 +134,9 @@ task gemPush(type: JavaExec, dependsOn: "gem") {
     classpath = configurations.jruby
     main = "org.jruby.Main"
     args = ["-rjars/setup", "-S", "gem", "push", "--verbose", tasks.getByPath(":embulk-ruby:gem").archivePath]
+    jvmArgs(
+            "--add-opens=java.base/java.security.cert=ALL-UNNAMED",
+            "--add-opens=java.base/sun.security.util=ALL-UNNAMED",
+            "--add-opens=java.base/sun.security.x509=ALL-UNNAMED")
     environment "RUBYGEMS_HOST": "https://rubygems.org/"
 }

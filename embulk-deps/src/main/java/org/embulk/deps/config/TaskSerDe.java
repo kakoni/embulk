@@ -1,22 +1,17 @@
 package org.embulk.deps.config;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.core.Version;
-import com.fasterxml.jackson.databind.BeanDescription;
-import com.fasterxml.jackson.databind.DeserializationConfig;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.Module;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.deser.Deserializers;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.core.Version;
+import tools.jackson.databind.BeanDescription;
+import tools.jackson.databind.DeserializationConfig;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.deser.Deserializers;
+import tools.jackson.databind.module.SimpleModule;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -36,9 +31,14 @@ import java.util.stream.StreamSupport;
 import org.embulk.config.Config;
 import org.embulk.config.ConfigDefault;
 import org.embulk.config.Task;
+import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.JacksonModule;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
 
 class TaskSerDe {
-    public static class TaskSerializer extends JsonSerializer<Task> {
+    public static class TaskSerializer extends ValueSerializer<Task> {
         private final ObjectMapper nestedObjectMapper;
 
         public TaskSerializer(ObjectMapper nestedObjectMapper) {
@@ -46,8 +46,7 @@ class TaskSerDe {
         }
 
         @Override
-        public void serialize(Task value, JsonGenerator jgen, SerializerProvider provider)
-                throws IOException {
+        public void serialize(Task value, JsonGenerator jgen, SerializationContext provider) {
             if (value instanceof Proxy) {
                 Object handler = Proxy.getInvocationHandler(value);
                 if (handler instanceof TaskInvocationHandler) {
@@ -55,7 +54,7 @@ class TaskSerDe {
                     Map<String, Object> objects = h.getObjects();
                     jgen.writeStartObject();
                     for (Map.Entry<String, Object> pair : objects.entrySet()) {
-                        jgen.writeFieldName(pair.getKey());
+                        jgen.writeName(pair.getKey());
                         nestedObjectMapper.writeValue(jgen, pair.getValue());
                     }
                     jgen.writeEndObject();
@@ -67,7 +66,7 @@ class TaskSerDe {
         }
     }
 
-    public static class TaskDeserializer<T> extends JsonDeserializer<T> {
+    public static class TaskDeserializer<T> extends ValueDeserializer<T> {
         private final ObjectMapper nestedObjectMapper;
 
         private final ModelManagerDelegateImpl model;
@@ -126,7 +125,7 @@ class TaskSerDe {
 
         @Override
         @SuppressWarnings("unchecked")
-        public T deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
+        public T deserialize(JsonParser jp, DeserializationContext ctxt) {
             Map<String, Object> objects = new ConcurrentHashMap<String, Object>();
             final ArrayList<Map.Entry<String, FieldEntry>> unusedMappings = new ArrayList<>();
             for (final Map.Entry<String, List<FieldEntry>> entry : this.mappings.entrySet()) {
@@ -136,15 +135,15 @@ class TaskSerDe {
             }
 
             String key;
-            JsonToken current = jp.getCurrentToken();
+            JsonToken current = jp.currentToken();
             if (current == JsonToken.START_OBJECT) {
                 current = jp.nextToken();
-                key = jp.getCurrentName();
+                key = jp.currentName();
             } else {
-                key = jp.nextFieldName();
+                key = jp.nextName();
             }
 
-            for (; key != null; key = jp.nextFieldName()) {
+            for (; key != null; key = jp.nextName()) {
                 JsonToken t = jp.nextToken(); // to get to value
                 final Collection<FieldEntry> fields = mappings.get(key);
                 if (fields == null || fields.isEmpty()) {
@@ -154,11 +153,11 @@ class TaskSerDe {
                     for (final FieldEntry field : fields) {
                         final Object value = nestedObjectMapper.convertValue(children, new GenericTypeReference(field.getType()));
                         if (value == null) {
-                            throw new JsonMappingException("Setting null to a task field is not allowed. Use Optional<T> to represent null.");
+                            throw DatabindException.from(jp, "Setting null to a task field is not allowed. Use Optional<T> to represent null.");
                         }
                         objects.put(field.getName(), value);
                         if (!unusedMappings.remove(new AbstractMap.SimpleImmutableEntry(key, field))) {
-                            throw new JsonMappingException(String.format(
+                            throw DatabindException.from(jp, String.format(
                                     "FATAL: Expected to be a bug in Embulk. Mapping \"%s: (%s) %s\" might have already been processed, or not in %s.",
                                     key,
                                     field.getType().toString(),
@@ -175,12 +174,12 @@ class TaskSerDe {
                 if (field.getDefaultJsonString().isPresent()) {
                     Object value = nestedObjectMapper.readValue(field.getDefaultJsonString().get(), new GenericTypeReference(field.getType()));
                     if (value == null) {
-                        throw new JsonMappingException("Setting null to a task field is not allowed. Use Optional<T> to represent null.");
+                        throw DatabindException.from(jp, "Setting null to a task field is not allowed. Use Optional<T> to represent null.");
                     }
                     objects.put(field.getName(), value);
                 } else {
                     // required field
-                    throw new JsonMappingException("Field '" + unused.getKey() + "' is required but not set", jp.getCurrentLocation());
+                    throw DatabindException.from(jp, "Field '" + unused.getKey() + "' is required but not set");
                 }
             }
 
@@ -265,7 +264,7 @@ class TaskSerDe {
         }
     }
 
-    public static class TaskDeserializerModule extends Module {  // can't use just SimpleModule, due to generic types
+    public static class TaskDeserializerModule extends JacksonModule {  // can't use just SimpleModule, due to generic types
         protected final ObjectMapper nestedObjectMapper;
 
         protected final ModelManagerDelegateImpl model;
@@ -287,23 +286,28 @@ class TaskSerDe {
 
         @Override
         public void setupModule(SetupContext context) {
-            context.addDeserializers(new Deserializers.Base() {
-                    @Override
-                    public JsonDeserializer<?> findBeanDeserializer(
-                            JavaType type,
-                            DeserializationConfig config,
-                            BeanDescription beanDesc) throws JsonMappingException {
-                        Class<?> raw = type.getRawClass();
-                        if (Task.class.isAssignableFrom(raw)) {
-                            return newTaskDeserializer(raw);
-                        }
-                        return super.findBeanDeserializer(type, config, beanDesc);
+            context.addDeserializers(new Deserializers() {
+                @Override
+                public ValueDeserializer<?> findBeanDeserializer(
+                        JavaType type,
+                        DeserializationConfig config,
+                        BeanDescription.Supplier beanDesc) throws DatabindException {
+                    final Class<?> raw = type.getRawClass();
+                    if (Task.class.isAssignableFrom(raw)) {
+                        return newTaskDeserializer(raw);
                     }
-                });
+                    return null;
+                }
+
+                @Override
+                public boolean hasDeserializerFor(DeserializationConfig config, Class<?> valueType) {
+                    return Task.class.isAssignableFrom(valueType);
+                }
+            });
         }
 
         @SuppressWarnings("unchecked")
-        protected JsonDeserializer<?> newTaskDeserializer(Class<?> raw) {
+        protected ValueDeserializer<?> newTaskDeserializer(Class<?> raw) {
             return new TaskDeserializer(nestedObjectMapper, model, raw);
         }
     }
@@ -320,7 +324,7 @@ class TaskSerDe {
 
         @Override
         @SuppressWarnings("unchecked")
-        protected JsonDeserializer<?> newTaskDeserializer(Class<?> raw) {
+        protected ValueDeserializer<?> newTaskDeserializer(Class<?> raw) {
             return new ConfigTaskDeserializer(nestedObjectMapper, model, raw);
         }
     }

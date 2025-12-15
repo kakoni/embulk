@@ -1,23 +1,24 @@
 package org.embulk.deps.config;
 
-import com.fasterxml.jackson.core.JsonGenerationException;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.io.IOException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.node.ObjectNode;
 import org.embulk.config.ConfigDiff;
 import org.embulk.config.ConfigSource;
 import org.embulk.config.DataSource;
 import org.embulk.config.TaskReport;
 import org.embulk.config.TaskSource;
+import tools.jackson.core.exc.StreamWriteException;
+import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
 
 public class DataSourceSerDe {
     public static class SerDeModule extends SimpleModule {
@@ -45,28 +46,35 @@ public class DataSourceSerDe {
     }
 
     // TODO T extends DataSource super DataSourceImpl
-    private static class DataSourceDeserializer<T extends DataSource> extends JsonDeserializer<T> {
+    private static class DataSourceDeserializer<T extends DataSource> extends ValueDeserializer<T> {
         private final ModelManagerDelegateImpl model;
 
         private final ObjectMapper treeObjectMapper;
 
         DataSourceDeserializer(ModelManagerDelegateImpl model) {
             this.model = model;
-            this.treeObjectMapper = new ObjectMapper();
+            this.treeObjectMapper = JsonMapper.builder()
+                    .disable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+                    .build();
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        public T deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
-            JsonNode json = treeObjectMapper.readTree(jp);
+        public T deserialize(JsonParser jp, DeserializationContext ctxt) {
+            final JsonNode json;
+            try {
+                json = treeObjectMapper.readTree(jp);
+            } catch (final tools.jackson.core.JacksonException ex) {
+                throw DatabindException.from(ctxt, "Expected object to deserialize DataSource", ex);
+            }
             if (!json.isObject()) {
-                throw new JsonMappingException("Expected object to deserialize DataSource", jp.getCurrentLocation());
+                throw DatabindException.from(ctxt, "Expected object to deserialize DataSource");
             }
             return (T) new DataSourceImpl(model, (ObjectNode) json);
         }
     }
 
-    private static class DataSourceSerializer<T extends DataSource> extends JsonSerializer<T> {
+    private static class DataSourceSerializer<T extends DataSource> extends ValueSerializer<T> {
         private final ModelManagerDelegateImpl model;
 
         DataSourceSerializer(final ModelManagerDelegateImpl model) {
@@ -74,21 +82,20 @@ public class DataSourceSerDe {
         }
 
         @Override
-        public void serialize(T value, JsonGenerator jgen, SerializerProvider provider)
-                throws IOException {
+        public void serialize(T value, JsonGenerator jgen, SerializationContext provider) {
             if (value == null) {
-                throw new JsonGenerationException(new NullPointerException(
-                        "DataSourceSerDe.DataSourceSerializer#serialize accepts only non-null value"));
+                throw new StreamWriteException(jgen,
+                        "DataSourceSerDe.DataSourceSerializer#serialize accepts only non-null value");
             }
             final String valueJsonStringified = value.toJson();
             if (valueJsonStringified == null) {
-                throw new JsonGenerationException(new NullPointerException(
-                        "DataSourceSerDe.DataSourceSerializer#serialize accepts only valid DataSource"));
+                throw new StreamWriteException(jgen,
+                        "DataSourceSerDe.DataSourceSerializer#serialize accepts only valid DataSource");
             }
             final JsonNode valueJsonNode = this.model.readObject(JsonNode.class, valueJsonStringified);
             if (!valueJsonNode.isObject()) {
-                throw new JsonGenerationException(new ClassCastException(
-                        "DataSourceSerDe.DataSourceSerializer#serialize accepts only valid JSON object"));
+                throw new StreamWriteException(jgen,
+                        "DataSourceSerDe.DataSourceSerializer#serialize accepts only valid JSON object");
             }
             ((ObjectNode) valueJsonNode).serialize(jgen, provider);
         }

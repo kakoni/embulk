@@ -1,14 +1,13 @@
 package org.embulk.deps.config;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.deser.std.FromStringDeserializer;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import java.io.IOException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.deser.std.FromStringDeserializer;
+import tools.jackson.databind.module.SimpleModule;
 import java.nio.charset.Charset;
+import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueSerializer;
 
 public final class CharsetJacksonModule extends SimpleModule {
     public CharsetJacksonModule() {
@@ -16,10 +15,9 @@ public final class CharsetJacksonModule extends SimpleModule {
         this.addDeserializer(Charset.class, new CharsetDeserializer());
     }
 
-    private static class CharsetSerializer extends JsonSerializer<Charset> {
+    private static class CharsetSerializer extends ValueSerializer<Charset> {
         @Override
-        public void serialize(Charset value, JsonGenerator jgen, SerializerProvider provider)
-                throws IOException {
+        public void serialize(Charset value, JsonGenerator jgen, SerializationContext provider) {
             jgen.writeString(value.name());
         }
     }
@@ -30,13 +28,12 @@ public final class CharsetJacksonModule extends SimpleModule {
         }
 
         @Override
-        protected Charset _deserialize(String value, DeserializationContext context)
-                throws JsonMappingException {
+        protected Charset _deserialize(String value, DeserializationContext context) {
             try {
                 return Charset.forName(value);
             } catch (UnsupportedOperationException ex) {
                 // TODO include link to a document to the message for the list of supported time zones
-                throw new JsonMappingException(String.format("Unknown charset '%s'", value));
+                throw DatabindException.from(context, String.format("Unknown charset '%s'", value));
             }
         }
     }

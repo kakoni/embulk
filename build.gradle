@@ -7,7 +7,7 @@ repositories {
 }
 
 group = "org.embulk"
-version = "0.11.5-SNAPSHOT"
+version = "0.11.6"
 
 def embeddedPlugins = [
     [ group: "org.embulk", name: "embulk-decoder-bzip2", version: "0.11.1" ],
@@ -58,14 +58,12 @@ dependencies {
         exclude group: "org.embulk", module: "embulk-spi"
     }
 
-    // Logback 1.5.x seems to be the latest as of May, 2024, but we use the Logback 1.3.x as of now because
-    // Logback 1.5.x requires JDK 11. It also expects Jakarta EE (jakarta.*), not Java EE (javax.*).
+    // Logback 1.5.x seems to be the latest as of May, 2024. We stay on Logback 1.3.x for now even though we target Java 17,
+    // because Logback 1.5.x expects Jakarta EE (jakarta.*) and would introduce more changes to revisit separately.
     // https://logback.qos.ch/download.html
     //
-    // Embulk still needs to work on JDK 8 for a while.
-    //
     // Logback 1.3.x and 1.4.x are both older stable versions, but still a kind of maintained. Their version strategy is:
-    // * Logback 1.3.x for Java 8 and Java EE (javax.*)
+    // * Logback 1.3.x for Java 8 and Java EE (javax.*) — still fine on newer Java
     // * Logback 1.4.x for Java 11 and Jakarta EE (jakarta.*)
     // https://logback.qos.ch/dependencies.html
     implementation "ch.qos.logback:logback-classic:1.3.14"
@@ -145,8 +143,8 @@ jar {
 
         // Exclude module-info.class from dependencies.
         //
-        // It should be okay while Embulk basically expects Java 8, and it should not break things even for Java 9+.
-        // But, it is nice to revisit module-info.class when Embulk officially supports modern Java versions.
+        // Embulk targets Java 17 but still avoids pulling dependency module-info.class into the all-in-one JAR.
+        // Revisit if we start publishing consistent module descriptors.
         //
         // TODO: Provide module-info.class unified for the all-in-one executable JAR file for the Java 9+ Module System.
         exclude "META-INF/versions/*/module-info.class"

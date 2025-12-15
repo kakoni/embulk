@@ -1,14 +1,13 @@
 package org.embulk.deps.config;
 
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.deser.std.FromStringDeserializer;
-import java.io.IOException;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.deser.std.FromStringDeserializer;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.embulk.spi.type.Type;
 import org.embulk.spi.type.Types;
+import tools.jackson.databind.DatabindException;
 
 class TypeDeserializer extends FromStringDeserializer<Type> {
     private static final Map<String, Type> stringToTypeMap;
@@ -29,10 +28,11 @@ class TypeDeserializer extends FromStringDeserializer<Type> {
     }
 
     @Override
-    protected Type _deserialize(String value, DeserializationContext context) throws IOException {
+    protected Type _deserialize(String value, DeserializationContext context) {
         Type t = stringToTypeMap.get(value);
         if (t == null) {
-            throw new JsonMappingException(
+            throw DatabindException.from(
+                    context,
                     String.format("Unknown type name '%s'. Supported types are: %s",
                                   value,
                                   String.join(", ", stringToTypeMap.keySet())));

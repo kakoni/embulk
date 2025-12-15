@@ -11,9 +11,9 @@ echo "" 1>&2
 echo " Get ready for the removal by running Embulk with your own 'java' command line." 1>&2
 echo " Running Embulk with your own 'java' command line has already been available." 1>&2
 echo "" 1>&2
-echo " For instance in Java 1.8 :" 1>&2
-echo "  java -XX:+AggressiveOpts -XX:+UseConcMarkSweepGC -jar embulk-X.Y.Z.jar run ..." 1>&2
-echo "  java -XX:+AggressiveOpts -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Xverify:none -jar embulk-X.Y.Z.jar guess ..." 1>&2
+echo " For instance in Java 17 :" 1>&2
+echo "  java -XX:+UseG1GC -jar embulk-X.Y.Z.jar run ..." 1>&2
+echo "  java -jar embulk-X.Y.Z.jar guess ..." 1>&2
 echo "" 1>&2
 echo " See https://github.com/embulk/embulk/issues/1496 for the details." 1>&2
 echo "================================================================================" 1>&2
@@ -69,11 +69,7 @@ done
 java_fullversion=`java -fullversion 2>&1`
 
 case "$java_fullversion" in
-    [a-z]*\ full\ version\ \"1.7*\")
-        echo "[ERROR] Embulk no longer supports Java 1.7." 1>&2
-        exit 1
-        ;;
-    [a-z]*\ full\ version\ \"1.8*\")
+    [a-z]*\ full\ version\ \"1[7-9]*\"|[a-z]*\ full\ version\ \"[2-9][0-9]*\")
         ;;
     *)
         echo "[ERROR] The Java version is not recognized by the self-executable single 'embulk' command." 1>&2
@@ -81,14 +77,15 @@ case "$java_fullversion" in
         echo "[ERROR]" 1>&2
         echo "[ERROR] Build your own 'java' command line instead of running Embulk as a single command." 1>&2
         echo "[ERROR]" 1>&2
+        echo "[ERROR] Embulk requires Java 17 or later." 1>&2
         echo "[ERROR] See https://github.com/embulk/embulk/issues/1496 for the details." 1>&2
         exit 1
 esac
 
 if test "$overwrite_optimize" = "true" -o "$default_optimize" -a "$overwrite_optimize" != "false"; then
-    java_args="-XX:+AggressiveOpts -XX:+UseConcMarkSweepGC $java_args"
+    java_args="-XX:+UseG1GC $java_args"
 else
-    java_args="-XX:+AggressiveOpts -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Xverify:none $java_args"
+    java_args="$java_args"
 fi
 
 exec java $java_args -jar "$0" $jruby_args "$@"

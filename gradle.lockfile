@@ -3,11 +3,11 @@
 # This file is expected to be part of source control.
 ch.qos.logback:logback-classic:1.3.14=compileClasspath,runtimeClasspath
 ch.qos.logback:logback-core:1.3.14=compileClasspath,runtimeClasspath
-com.fasterxml.jackson.core:jackson-annotations:2.16.2=deps,embulk-decoder-bzip2,embulk-decoder-gzip,embulk-encoder-bzip2,embulk-encoder-gzip,embulk-filter-remove_columns,embulk-filter-rename,embulk-formatter-csv,embulk-guess-bzip2,embulk-guess-csv,embulk-guess-csv_all_strings,embulk-guess-gzip,embulk-guess-json,embulk-input-config,embulk-input-file,embulk-output-file,embulk-output-null,embulk-output-stdout,embulk-parser-csv,embulk-parser-json
-com.fasterxml.jackson.core:jackson-core:2.16.2=deps,embulk-decoder-bzip2,embulk-decoder-gzip,embulk-encoder-bzip2,embulk-encoder-gzip,embulk-filter-remove_columns,embulk-filter-rename,embulk-formatter-csv,embulk-guess-bzip2,embulk-guess-csv,embulk-guess-csv_all_strings,embulk-guess-gzip,embulk-guess-json,embulk-input-config,embulk-input-file,embulk-output-file,embulk-output-null,embulk-output-stdout,embulk-parser-csv,embulk-parser-json
-com.fasterxml.jackson.core:jackson-databind:2.16.2=deps,embulk-decoder-bzip2,embulk-decoder-gzip,embulk-encoder-bzip2,embulk-encoder-gzip,embulk-filter-remove_columns,embulk-filter-rename,embulk-formatter-csv,embulk-guess-bzip2,embulk-guess-csv,embulk-guess-csv_all_strings,embulk-guess-gzip,embulk-guess-json,embulk-input-config,embulk-input-file,embulk-output-file,embulk-output-null,embulk-output-stdout,embulk-parser-csv,embulk-parser-json
-com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.16.2=deps,embulk-decoder-bzip2,embulk-decoder-gzip,embulk-encoder-bzip2,embulk-encoder-gzip,embulk-filter-remove_columns,embulk-filter-rename,embulk-formatter-csv,embulk-guess-bzip2,embulk-guess-csv,embulk-guess-csv_all_strings,embulk-guess-gzip,embulk-guess-json,embulk-input-config,embulk-input-file,embulk-output-file,embulk-output-null,embulk-output-stdout,embulk-parser-csv,embulk-parser-json
-com.fasterxml.jackson:jackson-bom:2.16.2=deps
+com.fasterxml.jackson.core:jackson-annotations:2.16.2=embulk-decoder-bzip2,embulk-decoder-gzip,embulk-encoder-bzip2,embulk-encoder-gzip,embulk-filter-remove_columns,embulk-filter-rename,embulk-formatter-csv,embulk-guess-bzip2,embulk-guess-csv,embulk-guess-csv_all_strings,embulk-guess-gzip,embulk-guess-json,embulk-input-config,embulk-input-file,embulk-output-file,embulk-output-null,embulk-output-stdout,embulk-parser-csv,embulk-parser-json
+com.fasterxml.jackson.core:jackson-annotations:2.20=deps
+com.fasterxml.jackson.core:jackson-core:2.16.2=embulk-decoder-bzip2,embulk-decoder-gzip,embulk-encoder-bzip2,embulk-encoder-gzip,embulk-filter-remove_columns,embulk-filter-rename,embulk-formatter-csv,embulk-guess-bzip2,embulk-guess-csv,embulk-guess-csv_all_strings,embulk-guess-gzip,embulk-guess-json,embulk-input-config,embulk-input-file,embulk-output-file,embulk-output-null,embulk-output-stdout,embulk-parser-csv,embulk-parser-json
+com.fasterxml.jackson.core:jackson-databind:2.16.2=embulk-decoder-bzip2,embulk-decoder-gzip,embulk-encoder-bzip2,embulk-encoder-gzip,embulk-filter-remove_columns,embulk-filter-rename,embulk-formatter-csv,embulk-guess-bzip2,embulk-guess-csv,embulk-guess-csv_all_strings,embulk-guess-gzip,embulk-guess-json,embulk-input-config,embulk-input-file,embulk-output-file,embulk-output-null,embulk-output-stdout,embulk-parser-csv,embulk-parser-json
+com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.16.2=embulk-decoder-bzip2,embulk-decoder-gzip,embulk-encoder-bzip2,embulk-encoder-gzip,embulk-filter-remove_columns,embulk-filter-rename,embulk-formatter-csv,embulk-guess-bzip2,embulk-guess-csv,embulk-guess-csv_all_strings,embulk-guess-gzip,embulk-guess-json,embulk-input-config,embulk-input-file,embulk-output-file,embulk-output-null,embulk-output-stdout,embulk-parser-csv,embulk-parser-json
 commons-cli:commons-cli:1.7.0=deps
 commons-codec:commons-codec:1.17.0=deps,embulk-decoder-bzip2,embulk-encoder-bzip2
 commons-io:commons-io:2.16.1=embulk-decoder-bzip2,embulk-encoder-bzip2
@@ -69,4 +69,7 @@ org.msgpack:msgpack-core:0.8.24=compileClasspath,runtimeClasspath
 org.slf4j:jcl-over-slf4j:2.0.13=deps
 org.slf4j:slf4j-api:2.0.13=compileClasspath,runtimeClasspath
 org.yaml:snakeyaml:2.2=deps
+tools.jackson.core:jackson-core:3.0.3=deps
+tools.jackson.core:jackson-databind:3.0.3=deps
+tools.jackson:jackson-bom:3.0.3=deps
 empty=

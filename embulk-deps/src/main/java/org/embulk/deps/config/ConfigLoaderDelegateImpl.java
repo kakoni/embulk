@@ -1,11 +1,13 @@
 package org.embulk.deps.config;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.RuntimeJsonMappingException;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.ObjectNode;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -35,8 +37,8 @@ public class ConfigLoaderDelegateImpl extends ConfigLoaderDelegate {
     public ConfigSource fromJsonString(String string) {
         JsonNode node;
         try {
-            node = new ObjectMapper().readTree(string);
-        } catch (IOException ex) {
+            node = OBJECT_MAPPER.readTree(string);
+        } catch (JacksonException ex) {
             throw new RuntimeException(ex);
         }
         validateJsonNode(node);
@@ -52,7 +54,7 @@ public class ConfigLoaderDelegateImpl extends ConfigLoaderDelegate {
 
     @Override
     public ConfigSource fromJson(InputStream stream) throws IOException {
-        JsonNode node = new ObjectMapper().readTree(stream);
+        JsonNode node = OBJECT_MAPPER.readTree(stream);
         validateJsonNode(node);
         return new DataSourceImpl(model, (ObjectNode) node);
     }
@@ -82,7 +84,7 @@ public class ConfigLoaderDelegateImpl extends ConfigLoaderDelegate {
 
     private static void validateJsonNode(JsonNode node) {
         if (!node.isObject()) {
-            throw new RuntimeJsonMappingException("Expected object to load ConfigSource but got " + node);
+            throw new IllegalArgumentException("Expected object to load ConfigSource but got " + node);
         }
     }
 
@@ -91,7 +93,7 @@ public class ConfigLoaderDelegateImpl extends ConfigLoaderDelegate {
     @SuppressWarnings("checkstyle:OverloadMethodsDeclarationOrder")
     public ConfigSource fromJson(JsonParser parser) throws IOException {
         // TODO check parsed.isObject()
-        ObjectNode source = (ObjectNode) new ObjectMapper().readTree(parser);
+        ObjectNode source = (ObjectNode) OBJECT_MAPPER.readTree(parser);
         return new DataSourceImpl(model, source);
     }
 
@@ -147,11 +149,14 @@ public class ConfigLoaderDelegateImpl extends ConfigLoaderDelegate {
     }
 
     private JsonNode objectToJson(Object object) {
-        ObjectMapper objectMapper = new ObjectMapper();
         try {
-            return objectMapper.readTree(objectMapper.writeValueAsString(object));
-        } catch (IOException ex) {
+            return OBJECT_MAPPER.readTree(OBJECT_MAPPER.writeValueAsString(object));
+        } catch (JacksonException ex) {
             throw new RuntimeException(ex);
         }
     }
+
+    private static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder()
+            .disable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+            .build();
 }

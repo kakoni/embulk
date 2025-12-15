@@ -3,15 +3,15 @@ package org.embulk.deps.config;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import org.embulk.spi.unit.ToStringMap;
 import org.junit.Test;
+import tools.jackson.databind.DatabindException;
 
 public class TestToStringMap {
     @Test
@@ -39,7 +39,7 @@ public class TestToStringMap {
     private static void assertMappingException(final String inputJson) throws IOException {
         try {
             MAPPER.readValue(inputJson, ToStringMap.class);
-        } catch (final JsonMappingException ex) {
+        } catch (final DatabindException ex) {
             return;
         }
         fail("JsonMappingException is expected.");
@@ -61,19 +61,9 @@ public class TestToStringMap {
     private static final ObjectMapper MAPPER;
 
     static {
-        MAPPER = new ObjectMapper();
-        MAPPER.registerModule(new Jdk8Module());
-        registerToStringJacksonModule(MAPPER);
-        registerToStringMapJacksonModule(MAPPER);
-    }
-
-    @SuppressWarnings("deprecation")
-    private static void registerToStringJacksonModule(final ObjectMapper mapper) {
-        mapper.registerModule(new ToStringJacksonModule());
-    }
-
-    @SuppressWarnings("deprecation")
-    private static void registerToStringMapJacksonModule(final ObjectMapper mapper) {
-        mapper.registerModule(new ToStringMapJacksonModule());
+        MAPPER = JsonMapper.builder()
+                .addModule(new ToStringJacksonModule())
+                .addModule(new ToStringMapJacksonModule())
+                .build();
     }
 }

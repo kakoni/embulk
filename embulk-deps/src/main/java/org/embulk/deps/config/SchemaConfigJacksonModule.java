@@ -1,25 +1,26 @@
 package org.embulk.deps.config;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.io.IOException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import java.util.ArrayList;
 import java.util.Collections;
 import org.embulk.config.ConfigSource;
 import org.embulk.spi.ColumnConfig;
 import org.embulk.spi.SchemaConfig;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.exc.StreamReadException;
+import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
 
 public final class SchemaConfigJacksonModule extends SimpleModule {
     public SchemaConfigJacksonModule(final ModelManagerDelegateImpl model) {
@@ -27,7 +28,7 @@ public final class SchemaConfigJacksonModule extends SimpleModule {
         this.addDeserializer(SchemaConfig.class, new SchemaConfigDeserializer(model));
     }
 
-    private static class SchemaConfigSerializer extends JsonSerializer<SchemaConfig> {
+    private static class SchemaConfigSerializer extends ValueSerializer<SchemaConfig> {
         SchemaConfigSerializer(final ModelManagerDelegateImpl model) {
             this.model = model;
         }
@@ -36,8 +37,7 @@ public final class SchemaConfigJacksonModule extends SimpleModule {
         public void serialize(
                 final SchemaConfig value,
                 final JsonGenerator jsonGenerator,
-                final SerializerProvider provider)
-                throws IOException {
+                final SerializationContext provider) {
             final ArrayNode array = OBJECT_MAPPER.createArrayNode();
 
             for (final ColumnConfig columnConfig : value.getColumns()) {
@@ -53,7 +53,7 @@ public final class SchemaConfigJacksonModule extends SimpleModule {
         private final ModelManagerDelegateImpl model;
     }
 
-    private static class SchemaConfigDeserializer extends JsonDeserializer<SchemaConfig> {
+    private static class SchemaConfigDeserializer extends ValueDeserializer<SchemaConfig> {
         SchemaConfigDeserializer(final ModelManagerDelegateImpl model) {
             this.model = model;
         }
@@ -62,24 +62,22 @@ public final class SchemaConfigJacksonModule extends SimpleModule {
         public SchemaConfig deserialize(
                 final JsonParser jsonParser,
                 final DeserializationContext context)
-                throws JsonMappingException {
+                throws DatabindException {
             final JsonNode node;
             try {
                 node = OBJECT_MAPPER.readTree(jsonParser);
-            } catch (final JsonParseException ex) {
-                throw JsonMappingException.from(jsonParser, "Failed to parse JSON.", ex);
-            } catch (final JsonProcessingException ex) {
-                throw JsonMappingException.from(jsonParser, "Failed to process JSON in parsing.", ex);
-            } catch (final IOException ex) {
-                throw JsonMappingException.from(jsonParser, "Failed to read JSON in parsing.", ex);
+            } catch (final StreamReadException ex) {
+                throw DatabindException.from(jsonParser, "Failed to parse JSON.", ex);
+            } catch (final JacksonException ex) {
+                throw DatabindException.from(jsonParser, "Failed to process JSON in parsing.", ex);
             }
 
             if (!node.isArray()) {
-                throw new JsonMappingException("Expected array to deserialize SchemaConfig", jsonParser.getCurrentLocation());
+                throw DatabindException.from(jsonParser, "Expected array to deserialize SchemaConfig");
             }
             final ArrayList<ColumnConfig> columnConfigs = new ArrayList<>();
             for (final JsonNode columnConfigNode : (ArrayNode) node) {
-                columnConfigs.add(model.readObject(ColumnConfig.class, columnConfigNode.traverse()));
+                columnConfigs.add(model.readObject(ColumnConfig.class, columnConfigNode.traverse(tools.jackson.core.ObjectReadContext.empty())));
             }
             return new SchemaConfig(Collections.unmodifiableList(columnConfigs));
         }
@@ -87,5 +85,7 @@ public final class SchemaConfigJacksonModule extends SimpleModule {
         private final ModelManagerDelegateImpl model;
     }
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder()
+            .disable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+            .build();
 }

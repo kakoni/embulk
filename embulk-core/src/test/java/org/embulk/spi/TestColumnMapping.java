@@ -4,10 +4,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import org.embulk.config.ModelManager;
 import org.embulk.spi.type.Type;
@@ -15,6 +13,8 @@ import org.embulk.spi.type.Types;
 import org.embulk.test.EmbulkTestRuntime;
 import org.junit.Rule;
 import org.junit.Test;
+import tools.jackson.core.exc.StreamReadException;
+import tools.jackson.databind.DatabindException;
 
 public class TestColumnMapping {
     @Rule
@@ -29,10 +29,10 @@ public class TestColumnMapping {
         final JsonNode reparsed = (new ObjectMapper()).readTree(stringified);
         assertTrue(reparsed.get("index").isInt());
         assertEquals(21, reparsed.get("index").intValue());
-        assertTrue(reparsed.get("name").isTextual());
-        assertEquals("bar", reparsed.get("name").textValue());
-        assertTrue(reparsed.get("type").isTextual());
-        assertEquals("double", reparsed.get("type").textValue());
+        assertTrue(reparsed.get("name").isString());
+        assertEquals("bar", reparsed.get("name").asString());
+        assertTrue(reparsed.get("type").isString());
+        assertEquals("double", reparsed.get("type").asString());
     }
 
     @Test
@@ -107,7 +107,7 @@ public class TestColumnMapping {
 
     @Test
     public void testZeroLeadingIntegralName() {
-        assertException(JsonParseException.class, "12", "049814", "\"long\"");
+        assertException(StreamReadException.class, "12", "049814", "\"long\"");
     }
 
     @Test
@@ -256,7 +256,7 @@ public class TestColumnMapping {
         try {
             modelManager.readObject(Column.class, json);
         } catch (final RuntimeException ex) {
-            final Throwable cause = ex.getCause();
+            final Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
             if (!(expectedException.isInstance(cause))) {
                 cause.printStackTrace();
                 fail();
@@ -272,7 +272,7 @@ public class TestColumnMapping {
     }
 
     private static void assertMappingException(final String json) {
-        assertException(JsonMappingException.class, json);
+        assertException(DatabindException.class, json);
     }
 
     private static void assertMappingException(final String indexValue, final String nameValue, final String typeValue) {

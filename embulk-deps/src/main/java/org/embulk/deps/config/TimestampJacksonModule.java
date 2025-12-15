@@ -1,13 +1,12 @@
 package org.embulk.deps.config;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.deser.std.FromStringDeserializer;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import java.io.IOException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.deser.std.FromStringDeserializer;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueSerializer;
 
 @Deprecated
 public final class TimestampJacksonModule extends SimpleModule {
@@ -17,10 +16,9 @@ public final class TimestampJacksonModule extends SimpleModule {
         this.addDeserializer(org.embulk.spi.time.Timestamp.class, new TimestampDeserializer());
     }
 
-    private static class TimestampSerializer extends JsonSerializer<org.embulk.spi.time.Timestamp> {
+    private static class TimestampSerializer extends ValueSerializer<org.embulk.spi.time.Timestamp> {
         @Override
-        public void serialize(org.embulk.spi.time.Timestamp value, JsonGenerator jgen, SerializerProvider provider)
-                throws IOException {
+        public void serialize(org.embulk.spi.time.Timestamp value, JsonGenerator jgen, SerializationContext provider) {
             jgen.writeString(value.toString());
         }
     }
@@ -31,17 +29,16 @@ public final class TimestampJacksonModule extends SimpleModule {
         }
 
         @Override
-        protected org.embulk.spi.time.Timestamp _deserialize(String value, DeserializationContext context)
-                throws JsonMappingException {
+        protected org.embulk.spi.time.Timestamp _deserialize(String value, DeserializationContext context) {
             if (value == null) {
-                throw new JsonMappingException("TimestampDeserializer#_deserialize received null unexpectedly.");
+                throw DatabindException.from(context, "TimestampDeserializer#_deserialize received null unexpectedly.");
             }
             try {
                 return org.embulk.spi.time.Timestamp.ofString(value);
             } catch (final NumberFormatException ex) {
-                throw new JsonMappingException("Invalid format as a Timestamp value: '" + value + "'", ex);
+                throw DatabindException.from(context, "Invalid format as a Timestamp value: '" + value + "'", ex);
             } catch (final IllegalStateException ex) {
-                throw new JsonMappingException("Unexpected failure in parsing: '" + value + "'", ex);
+                throw DatabindException.from(context, "Unexpected failure in parsing: '" + value + "'", ex);
             }
         }
     }

@@ -4,8 +4,8 @@ import static org.junit.Assert.assertTrue;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import java.io.IOException;
 import org.embulk.deps.config.TypeJacksonModule;
 import org.embulk.spi.type.Type;
@@ -41,8 +41,8 @@ public class TestTypeSerDe {
     private static final ObjectMapper MAPPER;
 
     static {
-        MAPPER = new ObjectMapper();
-        MAPPER.registerModule(new Jdk8Module());
-        MAPPER.registerModule(new TypeJacksonModule());
+        MAPPER = JsonMapper.builder()
+                .addModule(new TypeJacksonModule())
+                .build();
     }
 }

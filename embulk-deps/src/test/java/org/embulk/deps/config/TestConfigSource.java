@@ -2,15 +2,18 @@ package org.embulk.deps.config;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import org.embulk.config.Config;
 import org.embulk.config.ConfigDefault;
 import org.embulk.config.ConfigException;
@@ -97,7 +100,9 @@ public class TestConfigSource {
         final JsonNode json = (new ObjectMapper()).readTree(config.toJson());
         assertTrue(json.isObject());
         final ArrayList<String> fieldNames = new ArrayList<>();
-        json.fieldNames().forEachRemaining(fieldNames::add);
+        for (final String name : json.propertyNames()) {
+            fieldNames.add(name);
+        }
         Collections.sort(fieldNames);
         assertEquals(5, fieldNames.size());
         assertEquals("boolean", fieldNames.get(0));
@@ -113,8 +118,8 @@ public class TestConfigSource {
         assertTrue(json.get("long").isLong());
         assertEquals(Long.MAX_VALUE, json.get("long").asLong());
         assertEquals("string", fieldNames.get(4));
-        assertTrue(json.get("string").isTextual());
-        assertEquals("sf", json.get("string").asText());
+        assertTrue(json.get("string").isString());
+        assertEquals("sf", json.get("string").asString());
     }
 
     @Test
@@ -161,13 +166,9 @@ public class TestConfigSource {
     public void testGetListOfWrongType() {
         setExample(this.config);
 
-        try {
-            this.config.getListOf(String.class, "variety_list");
-        } catch (final RuntimeException ex) {
-            assertTrue(ex.getMessage().startsWith(
-                    "com.fasterxml.jackson.databind.exc.MismatchedInputException: "
-                    + "Cannot deserialize value of type `java.lang.String` from Object value (token `JsonToken.START_OBJECT`)"));
-        }
+        final RuntimeException ex =
+                assertThrows(RuntimeException.class, () -> this.config.getListOf(String.class, "variety_list"));
+        assertTrue(hasJacksonException(ex));
     }
 
     @Test
@@ -337,6 +338,17 @@ public class TestConfigSource {
     public void testFromJson() {
         String json = "{\"type\":\"test\"}";
         // TODO
+    }
+
+    private static boolean hasJacksonException(final Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof JacksonException) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     private static void setExample(final ConfigSource config) {

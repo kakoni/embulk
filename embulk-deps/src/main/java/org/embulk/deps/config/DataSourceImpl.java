@@ -1,9 +1,9 @@
 package org.embulk.deps.config;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.ObjectNode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -46,24 +46,22 @@ public class DataSourceImpl implements ConfigSource, TaskSource, TaskReport, Con
 
     @Override
     public List<String> getAttributeNames() {
-        final ArrayList<String> copy = new ArrayList<>();
-        data.fieldNames().forEachRemaining(copy::add);
-        return Collections.unmodifiableList(copy);
+        final ArrayList<String> names = new ArrayList<>();
+        for (final String name : data.propertyNames()) {
+            names.add(name);
+        }
+        return Collections.unmodifiableList(names);
     }
 
     // It was overridden from DataSource, but getAttributes is removed from DataSource.
     @Deprecated
     public Iterable<Map.Entry<String, JsonNode>> getAttributes() {
-        return new Iterable<Map.Entry<String, JsonNode>>() {
-            public Iterator<Map.Entry<String, JsonNode>> iterator() {
-                return data.fields();
-            }
-        };
+        return data.properties();
     }
 
     @Override
     public boolean isEmpty() {
-        return !data.fieldNames().hasNext();
+        return !data.propertyNames().iterator().hasNext();
     }
 
     @Override
@@ -103,7 +101,7 @@ public class DataSourceImpl implements ConfigSource, TaskSource, TaskReport, Con
         if (json == null) {
             throw new ConfigException("Attribute " + attrName + " is required but not set");
         }
-        return model.readObject(type, json.traverse());
+        return model.readObject(type, json.traverse(tools.jackson.core.ObjectReadContext.empty()));
     }
 
     @Override
@@ -112,7 +110,7 @@ public class DataSourceImpl implements ConfigSource, TaskSource, TaskReport, Con
         if (json == null) {
             return defaultValue;
         }
-        return model.readObject(type, json.traverse());
+        return model.readObject(type, json.traverse(tools.jackson.core.ObjectReadContext.empty()));
     }
 
     @Override
@@ -125,8 +123,8 @@ public class DataSourceImpl implements ConfigSource, TaskSource, TaskReport, Con
             throw new ConfigException("Attribute " + attrName + " must be an array");
         }
         final ArrayList<E> list = new ArrayList<>();
-        for (final JsonNode element : (Iterable<JsonNode>) () -> json.elements()) {
-            list.add(model.readObject(type, element.traverse()));
+        for (final JsonNode element : json.values()) {
+            list.add(model.readObject(type, element.traverse(tools.jackson.core.ObjectReadContext.empty())));
         }
         return Collections.unmodifiableList(list);
     }
@@ -208,7 +206,7 @@ public class DataSourceImpl implements ConfigSource, TaskSource, TaskReport, Con
             throw new ConfigException(new ClassCastException("DataSource#setAll accepts only valid JSON object"));
         }
         final ObjectNode otherObjectNode = (ObjectNode) otherJsonNode;
-        for (Map.Entry<String, JsonNode> field : (Iterable<Map.Entry<String, JsonNode>>) () -> otherObjectNode.fields()) {
+        for (Map.Entry<String, JsonNode> field : otherObjectNode.properties()) {
             this.data.set(field.getKey(), field.getValue());
         }
         return this;
@@ -253,7 +251,7 @@ public class DataSourceImpl implements ConfigSource, TaskSource, TaskReport, Con
     }
 
     private static void mergeJsonObject(ObjectNode src, ObjectNode other) {
-        Iterator<Map.Entry<String, JsonNode>> ite = other.fields();
+        Iterator<Map.Entry<String, JsonNode>> ite = other.properties().iterator();
         while (ite.hasNext()) {
             Map.Entry<String, JsonNode> pair = ite.next();
             JsonNode s = src.get(pair.getKey());
@@ -287,7 +285,7 @@ public class DataSourceImpl implements ConfigSource, TaskSource, TaskReport, Con
 
     private static Map<String, Object> jsonObjectToMap(final ObjectNode object) {
         final LinkedHashMap<String, Object> map = new LinkedHashMap<>();
-        for (final Map.Entry<String, JsonNode> field : (Iterable<Map.Entry<String, JsonNode>>) () -> object.fields()) {
+        for (final Map.Entry<String, JsonNode> field : object.properties()) {
             map.put(field.getKey(), jsonToPlain(field.getValue()));
         }
         return Collections.unmodifiableMap(map);
@@ -295,7 +293,7 @@ public class DataSourceImpl implements ConfigSource, TaskSource, TaskReport, Con
 
     private static List<Object> jsonArrayToList(final ArrayNode array) {
         final ArrayList<Object> list = new ArrayList<>();
-        for (final JsonNode element : (Iterable<JsonNode>) () -> array.elements()) {
+        for (final JsonNode element : array.elements()) {
             list.add(jsonToPlain(element));
         }
         return Collections.unmodifiableList(list);
@@ -312,8 +310,8 @@ public class DataSourceImpl implements ConfigSource, TaskSource, TaskReport, Con
             return json.longValue();
         } else if (json.isDouble()) {
             return json.doubleValue();
-        } else if (json.isTextual()) {
-            return json.textValue();
+        } else if (json.isString()) {
+            return json.asText();
         } else if (json.isArray()) {
             return jsonArrayToList((ArrayNode) json);
         } else if (json.isObject()) {
@@ -326,13 +324,13 @@ public class DataSourceImpl implements ConfigSource, TaskSource, TaskReport, Con
     @Override
     @Deprecated
     public <T> T loadTask(Class<T> taskType) {
-        return model.readObject(taskType, data.traverse());
+        return model.readObject(taskType, data.traverse(tools.jackson.core.ObjectReadContext.empty()));
     }
 
     @Override
     @Deprecated
     public <T> T loadConfig(Class<T> taskType) {
-        return model.readObjectWithConfigSerDe(taskType, data.traverse());
+        return model.readObjectWithConfigSerDe(taskType, data.traverse(tools.jackson.core.ObjectReadContext.empty()));
     }
 
     @Override

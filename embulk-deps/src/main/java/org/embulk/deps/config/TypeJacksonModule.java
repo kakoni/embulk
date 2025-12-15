@@ -1,11 +1,10 @@
 package org.embulk.deps.config;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import java.io.IOException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.module.SimpleModule;
 import org.embulk.spi.type.Type;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueSerializer;
 
 public final class TypeJacksonModule extends SimpleModule {
     public TypeJacksonModule() {
@@ -13,13 +12,12 @@ public final class TypeJacksonModule extends SimpleModule {
         this.addDeserializer(Type.class, new TypeDeserializer());
     }
 
-    private static class TypeSerializer extends JsonSerializer<Type> {
+    private static class TypeSerializer extends ValueSerializer<Type> {
         @Override
         public void serialize(
                 final Type value,
                 final JsonGenerator jsonGenerator,
-                final SerializerProvider provider)
-                throws IOException {
+                final SerializationContext provider) {
             jsonGenerator.writeString(value.getName());
         }
     }

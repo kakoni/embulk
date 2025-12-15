@@ -16,10 +16,10 @@
 
 package org.embulk.deps.json;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.core.filter.FilteringParserDelegate;
-import com.fasterxml.jackson.core.filter.JsonPointerBasedFilter;
+import tools.jackson.core.JsonToken;
+import tools.jackson.core.filter.FilteringParserDelegate;
+import tools.jackson.core.filter.JsonPointerBasedFilter;
+import tools.jackson.core.filter.TokenFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -29,6 +29,9 @@ import java.util.Map;
 import java.util.Optional;
 import org.msgpack.value.Value;
 import org.msgpack.value.ValueFactory;
+import tools.jackson.core.exc.StreamReadException;
+import tools.jackson.core.json.JsonFactory;
+import tools.jackson.core.json.JsonReadFeature;
 
 /**
  * Parses a stringified JSON to MessagePack {@link org.msgpack.value.Value}.
@@ -38,9 +41,10 @@ public class JsonParserDelegateImpl extends org.embulk.spi.json.JsonParserDelega
      * Creates a {@link JsonParserDelegateImpl} instance.
      */
     public JsonParserDelegateImpl() {
-        this.factory = new JsonFactory();
-        factory.enable(com.fasterxml.jackson.core.JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS);
-        factory.enable(com.fasterxml.jackson.core.JsonParser.Feature.ALLOW_NON_NUMERIC_NUMBERS);
+        this.factory = JsonFactory.builder()
+                .enable(JsonReadFeature.ALLOW_UNESCAPED_CONTROL_CHARS)
+                .enable(JsonReadFeature.ALLOW_NON_NUMERIC_NUMBERS)
+                .build();
     }
 
     /**
@@ -116,14 +120,14 @@ public class JsonParserDelegateImpl extends org.embulk.spi.json.JsonParserDelega
         }
     }
 
-    private static com.fasterxml.jackson.core.JsonParser wrapWithPointerFilter(
-            final com.fasterxml.jackson.core.JsonParser baseParser, final String offsetInJsonPointer) {
+    private static tools.jackson.core.JsonParser wrapWithPointerFilter(
+            final tools.jackson.core.JsonParser baseParser, final String offsetInJsonPointer) {
         return new FilteringParserDelegate(
                 baseParser,
                 new JsonPointerBasedFilter(offsetInJsonPointer),
-                false,
+                TokenFilter.Inclusion.ONLY_INCLUDE_ALL,
                 true  // Allow multiple matches
-                );
+        );
     }
 
     private static class StreamParseContext extends AbstractParseContext implements Stream {
@@ -132,13 +136,11 @@ public class JsonParserDelegateImpl extends org.embulk.spi.json.JsonParserDelega
             super(createParser(factory, in, Optional.ofNullable(offsetInJsonPointer)));
         }
 
-        private static com.fasterxml.jackson.core.JsonParser createParser(
+        private static tools.jackson.core.JsonParser createParser(
                 final JsonFactory factory, final InputStream in, final Optional<String> offsetInJsonPointer) throws IOException {
             try {
-                final com.fasterxml.jackson.core.JsonParser baseParser = factory.createParser(in);
+                final tools.jackson.core.JsonParser baseParser = factory.createParser(in);
                 return offsetInJsonPointer.map(p -> wrapWithPointerFilter(baseParser, p)).orElse(baseParser);
-            } catch (final IOException ex) {
-                throw ex;
             } catch (final Exception ex) {
                 throw new org.embulk.spi.json.JsonParseException("Failed to parse JSON", ex);
             }
@@ -161,10 +163,10 @@ public class JsonParserDelegateImpl extends org.embulk.spi.json.JsonParserDelega
             this.json = json;
         }
 
-        private static com.fasterxml.jackson.core.JsonParser createParser(
+        private static tools.jackson.core.JsonParser createParser(
                 final JsonFactory factory, final String json, final Optional<String> offsetInJsonPointer) {
             try {
-                final com.fasterxml.jackson.core.JsonParser baseParser = factory.createParser(json);
+                final tools.jackson.core.JsonParser baseParser = factory.createParser(json);
                 return offsetInJsonPointer.map(p -> wrapWithPointerFilter(baseParser, p)).orElse(baseParser);
             } catch (final Exception ex) {
                 throw new org.embulk.spi.json.JsonParseException("Failed to parse JSON: " + JsonParserDelegateImpl.sampleJsonString(json), ex);
@@ -192,7 +194,7 @@ public class JsonParserDelegateImpl extends org.embulk.spi.json.JsonParserDelega
     }
 
     private abstract static class AbstractParseContext {
-        public AbstractParseContext(final com.fasterxml.jackson.core.JsonParser parser) {
+        public AbstractParseContext(final tools.jackson.core.JsonParser parser) {
             this.parser = parser;
         }
 
@@ -209,7 +211,7 @@ public class JsonParserDelegateImpl extends org.embulk.spi.json.JsonParserDelega
                     return null;
                 }
                 return this.jsonTokenToValue(token);
-            } catch (final com.fasterxml.jackson.core.JsonParseException ex) {
+            } catch (final StreamReadException ex) {
                 throw new org.embulk.spi.json.JsonParseException("Failed to parse JSON: " + sampleJsonString(), ex);
             } catch (final IOException ex) {
                 throw ex;
@@ -234,11 +236,11 @@ public class JsonParserDelegateImpl extends org.embulk.spi.json.JsonParserDelega
                 case VALUE_NUMBER_INT:
                     try {
                         return ValueFactory.newInteger(this.parser.getLongValue());
-                    } catch (final com.fasterxml.jackson.core.JsonParseException ex) {
+                    } catch (final StreamReadException ex) {
                         return ValueFactory.newInteger(this.parser.getBigIntegerValue());
                     }
                 case VALUE_STRING:
-                    return ValueFactory.newString(this.parser.getText());
+                    return ValueFactory.newString(this.parser.getString());
                 case START_ARRAY: {
                     final List<Value> list = new ArrayList<>();
                     while (true) {
@@ -248,7 +250,7 @@ public class JsonParserDelegateImpl extends org.embulk.spi.json.JsonParserDelega
                         } else if (nextToken == null) {
                             throw new org.embulk.spi.json.JsonParseException(
                                     "Unexpected end of JSON at "
-                                            + this.parser.getTokenLocation()
+                                            + this.parser.currentTokenLocation()
                                             + " while expecting an element of an array: "
                                             + sampleJsonString());
                         }
@@ -265,17 +267,17 @@ public class JsonParserDelegateImpl extends org.embulk.spi.json.JsonParserDelega
                         } else if (nextToken == null) {
                             throw new org.embulk.spi.json.JsonParseException(
                                     "Unexpected end of JSON at "
-                                            + this.parser.getTokenLocation()
+                                            + this.parser.currentTokenLocation()
                                             + " while expecting a key of object: "
                                             + sampleJsonString());
                         }
-                        final String key = this.parser.getCurrentName();
+                        final String key = this.parser.currentName();
                         if (key == null) {
                             throw new org.embulk.spi.json.JsonParseException(
                                     "Unexpected token "
                                             + nextToken
                                             + " at "
-                                            + this.parser.getTokenLocation()
+                                            + this.parser.currentTokenLocation()
                                             + ": "
                                             + sampleJsonString());
                         }
@@ -283,7 +285,7 @@ public class JsonParserDelegateImpl extends org.embulk.spi.json.JsonParserDelega
                         if (nextNextToken == null) {
                             throw new org.embulk.spi.json.JsonParseException(
                                     "Unexpected end of JSON at "
-                                            + this.parser.getTokenLocation()
+                                            + this.parser.currentTokenLocation()
                                             + " while expecting a value of object: "
                                             + sampleJsonString());
                         }
@@ -292,17 +294,17 @@ public class JsonParserDelegateImpl extends org.embulk.spi.json.JsonParserDelega
                     }
                 // Never fall through from the previous branch of START_OBJECT.
                 case VALUE_EMBEDDED_OBJECT:
-                case FIELD_NAME:
+                case PROPERTY_NAME:
                 case END_ARRAY:
                 case END_OBJECT:
                 case NOT_AVAILABLE:
                 default:
                     throw new org.embulk.spi.json.JsonParseException(
-                            "Unexpected token " + token + " at " + this.parser.getTokenLocation() + ": " + sampleJsonString());
+                            "Unexpected token " + token + " at " + this.parser.currentTokenLocation() + ": " + sampleJsonString());
             }
         }
 
-        private final com.fasterxml.jackson.core.JsonParser parser;
+        private final tools.jackson.core.JsonParser parser;
     }
 
     private final JsonFactory factory;

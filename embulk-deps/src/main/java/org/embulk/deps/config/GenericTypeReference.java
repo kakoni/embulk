@@ -1,6 +1,6 @@
 package org.embulk.deps.config;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import tools.jackson.core.type.TypeReference;
 import java.lang.reflect.Type;
 
 class GenericTypeReference extends TypeReference<Object> {

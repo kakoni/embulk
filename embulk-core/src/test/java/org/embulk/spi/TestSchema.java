@@ -5,10 +5,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.util.List;
 import org.embulk.config.ModelManager;
@@ -39,18 +39,18 @@ public class TestSchema {
         final ObjectNode column1 = (ObjectNode) object1;
         assertTrue(column1.get("index").isInt());
         assertEquals(0, column1.get("index").intValue());
-        assertTrue(column1.get("name").isTextual());
-        assertEquals("hoge", column1.get("name").textValue());
-        assertTrue(column1.get("type").isTextual());
-        assertEquals("double", column1.get("type").textValue());
+        assertTrue(column1.get("name").isString());
+        assertEquals("hoge", column1.get("name").asString());
+        assertTrue(column1.get("type").isString());
+        assertEquals("double", column1.get("type").asString());
 
         final ObjectNode column2 = (ObjectNode) object2;
         assertTrue(column2.get("index").isInt());
         assertEquals(1, column2.get("index").intValue());
-        assertTrue(column2.get("name").isTextual());
-        assertEquals("fuga", column2.get("name").textValue());
-        assertTrue(column2.get("type").isTextual());
-        assertEquals("json", column2.get("type").textValue());
+        assertTrue(column2.get("name").isString());
+        assertEquals("fuga", column2.get("name").asString());
+        assertTrue(column2.get("type").isString());
+        assertEquals("json", column2.get("type").asString());
     }
 
     @Test

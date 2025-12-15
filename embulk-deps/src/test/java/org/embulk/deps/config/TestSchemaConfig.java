@@ -1,13 +1,13 @@
 package org.embulk.deps.config;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import org.embulk.config.ConfigSource;
 import org.embulk.config.ModelManager;
@@ -18,6 +18,7 @@ import org.embulk.spi.type.Types;
 import org.embulk.test.EmbulkTestRuntime;
 import org.junit.Rule;
 import org.junit.Test;
+import tools.jackson.databind.DatabindException;
 
 public class TestSchemaConfig {
     @Rule
@@ -82,13 +83,10 @@ public class TestSchemaConfig {
         node.put("name", "foo");
 
         final ModelManager model = ExecInternal.getModelManager();
-        try {
-            model.readObject(ColumnConfig.class, MAPPER.writeValueAsString(node));
-        } catch (final RuntimeException ex) {
-            assertTrue(ex.getCause() instanceof JsonMappingException);
-            return;
-        }
-        fail();
+        final RuntimeException ex =
+                assertThrows(RuntimeException.class,
+                        () -> model.readObject(ColumnConfig.class, MAPPER.writeValueAsString(node)));
+        assertTrue(hasDatabindException(ex));
     }
 
     @Test
@@ -97,13 +95,10 @@ public class TestSchemaConfig {
         node.put("type", "string");
 
         final ModelManager model = ExecInternal.getModelManager();
-        try {
-            model.readObject(ColumnConfig.class, MAPPER.writeValueAsString(node));
-        } catch (final RuntimeException ex) {
-            assertTrue(ex.getCause() instanceof JsonMappingException);
-            return;
-        }
-        fail();
+        final RuntimeException ex =
+                assertThrows(RuntimeException.class,
+                        () -> model.readObject(ColumnConfig.class, MAPPER.writeValueAsString(node)));
+        assertTrue(hasDatabindException(ex));
     }
 
     @Test
@@ -113,13 +108,10 @@ public class TestSchemaConfig {
         node.put("type", "invalid_type");
 
         final ModelManager model = ExecInternal.getModelManager();
-        try {
-            model.readObject(ColumnConfig.class, MAPPER.writeValueAsString(node));
-        } catch (final RuntimeException ex) {
-            assertTrue(ex.getCause() instanceof JsonMappingException);
-            return;
-        }
-        fail();
+        final RuntimeException ex =
+                assertThrows(RuntimeException.class,
+                        () -> model.readObject(ColumnConfig.class, MAPPER.writeValueAsString(node)));
+        assertTrue(hasDatabindException(ex));
     }
 
     @Test
@@ -199,13 +191,21 @@ public class TestSchemaConfig {
         array.add(node3);
 
         final ModelManager model = ExecInternal.getModelManager();
-        try {
-            model.readObject(SchemaConfig.class, MAPPER.writeValueAsString(array));
-        } catch (final RuntimeException ex) {
-            assertTrue(ex.getCause() instanceof JsonMappingException);
-            return;
+        final RuntimeException ex =
+                assertThrows(RuntimeException.class,
+                        () -> model.readObject(SchemaConfig.class, MAPPER.writeValueAsString(array)));
+        assertTrue(hasDatabindException(ex));
+    }
+
+    private static boolean hasDatabindException(final Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof DatabindException) {
+                return true;
+            }
+            current = current.getCause();
         }
-        fail();
+        return false;
     }
 
     private static final ObjectMapper MAPPER = new ObjectMapper();

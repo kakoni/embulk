@@ -26,7 +26,7 @@ tasks.withType(JavaCompile) {
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(8)
+        languageVersion = JavaLanguageVersion.of(17)
     }
 
     withJavadocJar()
@@ -54,10 +54,9 @@ dependencies {
     api "org.yaml:snakeyaml:2.2"
 
     // Jackson & Config
-    api "com.fasterxml.jackson.core:jackson-annotations:2.16.2"
-    api "com.fasterxml.jackson.core:jackson-core:2.16.2"
-    api "com.fasterxml.jackson.core:jackson-databind:2.16.2"
-    api "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.16.2"
+    api "com.fasterxml.jackson.core:jackson-annotations:2.20"
+    api "tools.jackson.core:jackson-core:3.0.3"
+    api "tools.jackson.core:jackson-databind:3.0.3"
 
     // Apache Commons Lang 3 is required from Apache Maven.
     api "org.apache.commons:commons-lang3:3.14.0"
@@ -106,7 +105,7 @@ javadoc {
         locale = "en_US"
         encoding = "UTF-8"
         overview = "src/main/html/overview.html"
-        links "https://docs.oracle.com/javase/8/docs/api/"
+        links "https://docs.oracle.com/en/java/javase/17/docs/api/"
     }
 }
 

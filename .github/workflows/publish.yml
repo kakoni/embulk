@@ -23,8 +23,12 @@ jobs:
       run: echo "GIT_TAG=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
     - name: Print the tag
       run: echo "${{ env.GIT_TAG }}"
+    - name: Set the release version
+      run: echo "EMBULK_VERSION=${GIT_TAG#v}" >> $GITHUB_ENV
+    - name: Print the release version
+      run: echo "${{ env.EMBULK_VERSION }}"
     - name: Build
-      run: ./gradlew executable embulk-core:jar embulk-deps:jar embulk-junit4:jar embulk-ruby:gem
+      run: ./gradlew -PembulkVersion="${{ env.EMBULK_VERSION }}" executable embulk-core:jar embulk-deps:jar embulk-junit4:jar embulk-ruby:gem
     - name: Create a GitHub Release
       uses: "actions/github-script@v8"
       with:
@@ -56,9 +60,15 @@ jobs:
         script: |
           const fs = require('fs');
           const path = require('path');
-          const version = '${{ env.GIT_TAG }}'.substring(1);
-          const filename = 'embulk-'.concat(version, '.jar');
-          const localPath = path.join(path.resolve(process.env.GITHUB_WORKSPACE), 'build', 'executable', filename);
+          const executableDir = path.join(path.resolve(process.env.GITHUB_WORKSPACE), 'build', 'executable');
+          const candidates = (await fs.promises.readdir(executableDir))
+            .filter((name) => /^embulk-.*\.jar$/.test(name))
+            .sort();
+          if (candidates.length === 0) {
+            throw new Error(`No executable JAR found in ${executableDir}`);
+          }
+          const filename = candidates[candidates.length - 1];
+          const localPath = path.join(executableDir, filename);
           console.log(localPath);
           await github.rest.repos.uploadReleaseAsset({
             owner: context.repo.owner,
@@ -74,10 +84,15 @@ jobs:
         script: |
           const fs = require('fs');
           const path = require('path');
-          const javaVersion = '${{ env.GIT_TAG }}'.substring(1);
-          const rubyVersion = javaVersion.replace(/-/g, '.').toLowerCase();
-          const filename = 'embulk-'.concat(rubyVersion, '-java.gem');
-          const localPath = path.join(path.resolve(process.env.GITHUB_WORKSPACE), 'embulk-ruby', 'build', 'gems', filename);
+          const gemsDir = path.join(path.resolve(process.env.GITHUB_WORKSPACE), 'embulk-ruby', 'build', 'gems');
+          const candidates = (await fs.promises.readdir(gemsDir))
+            .filter((name) => /^embulk-.*-java\.gem$/.test(name))
+            .sort();
+          if (candidates.length === 0) {
+            throw new Error(`No Ruby gem found in ${gemsDir}`);
+          }
+          const filename = candidates[candidates.length - 1];
+          const localPath = path.join(gemsDir, filename);
           console.log(localPath);
           await github.rest.repos.uploadReleaseAsset({
             owner: context.repo.owner,
@@ -87,7 +102,7 @@ jobs:
             data: await fs.promises.readFile(localPath)
           });
     - name: Publish the Maven artifacts
-      run: ./gradlew --stacktrace embulk-core:publishMavenPublicationToMavenCentralRepository embulk-deps:publishMavenPublicationToMavenCentralRepository embulk-junit4:publishMavenPublicationToMavenCentralRepository
+      run: ./gradlew -PembulkVersion="${{ env.EMBULK_VERSION }}" --stacktrace embulk-core:publishMavenPublicationToMavenCentralRepository embulk-deps:publishMavenPublicationToMavenCentralRepository embulk-junit4:publishMavenPublicationToMavenCentralRepository
       env:
         ORG_GRADLE_PROJECT_ossrhUsername: ${{ vars.OSSRH_USERNAME }}
         ORG_GRADLE_PROJECT_ossrhPassword: ${{ secrets.OSSRH_PASSWORD }}
@@ -99,6 +114,6 @@ jobs:
         touch $HOME/.gem/credentials
         chmod 0600 $HOME/.gem/credentials
         printf -- "---\n:rubygems_api_key: ${RUBYGEMS_API_KEY}\n" > $HOME/.gem/credentials
-        ./gradlew --stacktrace embulk-ruby:gemPush
+        ./gradlew -PembulkVersion="${{ env.EMBULK_VERSION }}" --stacktrace embulk-ruby:gemPush
       env:
         RUBYGEMS_API_KEY: "${{secrets.RUBYGEMS_API_KEY}}"

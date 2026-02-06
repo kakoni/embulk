@@ -53,10 +53,15 @@ if "%overwrite_optimize%" == "true" (
 )
 
 for /f "delims=" %%w in ('java -fullversion 2^>^&1') do set java_fullversion=%%w
-set java_version=0
-for %%v in (17 18 19 20 21 22 23 24 25 26 27 28 29) do (
-    echo %java_fullversion% | find " full version ""%%v" > NUL
-    if not ERRORLEVEL 1 (set java_version=%%v)
+for /f "tokens=4 delims= " %%v in ("%java_fullversion%") do set java_version_string=%%~v
+set java_version_string=%java_version_string:"=%
+for /f "tokens=1 delims=.-+_" %%v in ("%java_version_string%") do set java_version=%%v
+if "%java_version%"=="1" (
+    for /f "tokens=2 delims=.-+_" %%v in ("%java_version_string%") do set java_version=%%v
+)
+set /a java_version=%java_version% > NUL 2>&1
+if ERRORLEVEL 1 (
+    set java_version=0
 )
 
 if %java_version% GEQ 17 (

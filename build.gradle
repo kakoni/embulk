@@ -7,7 +7,7 @@ repositories {
 }
 
 group = "org.embulk"
-version = "0.11.6"
+version = "0.12.0-SNAPSHOT"
 
 def embeddedPlugins = [
     [ group: "org.embulk", name: "embulk-decoder-bzip2", version: "0.11.1" ],
@@ -42,7 +42,16 @@ configurations {
 
     // They are "standard" plugins embedded in the executable Embulk binary distribution.
     embeddedPlugins.each { pluginArtifact ->
-        create(pluginArtifact["name"]).resolutionStrategy.activateDependencyLocking()
+        create(pluginArtifact["name"]) {
+            resolutionStrategy.activateDependencyLocking()
+            resolutionStrategy.eachDependency { details ->
+                if (details.requested.group == "com.fasterxml.jackson.core"
+                        && details.requested.name == "jackson-annotations") {
+                    details.useVersion("2.20")
+                    details.because("Keep a single jackson-annotations version in /lib for runtime consistency.")
+                }
+            }
+        }
     }
 }
 

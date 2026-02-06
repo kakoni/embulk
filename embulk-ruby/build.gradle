@@ -39,6 +39,10 @@ dependencies {
 }
 
 task gemContents(type: Copy) {
+    // Rebuild generated gem metadata when project version changes.
+    inputs.property("java_version", project.version.toString())
+    inputs.property("ruby_version", project.ruby_version.toString())
+
     doFirst {
         delete("${buildDir}/gemContents")
         mkdir("${buildDir}/gemContents")

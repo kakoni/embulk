@@ -2,7 +2,9 @@ package org.embulk.deps.config;
 
 import tools.jackson.core.JsonParser;
 import tools.jackson.core.JacksonException;
+import tools.jackson.core.ObjectReadContext;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.DatabindException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
@@ -84,7 +86,9 @@ public class ConfigLoaderDelegateImpl extends ConfigLoaderDelegate {
 
     private static void validateJsonNode(JsonNode node) {
         if (!node.isObject()) {
-            throw new IllegalArgumentException("Expected object to load ConfigSource but got " + node);
+            throw DatabindException.from(
+                    node.traverse(ObjectReadContext.empty()),
+                    "Expected object to load ConfigSource but got " + node);
         }
     }
 

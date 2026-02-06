@@ -5,10 +5,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ArrayNode;
-import tools.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.util.List;
 import org.embulk.config.ModelManager;
@@ -17,6 +13,10 @@ import org.embulk.spi.type.Types;
 import org.embulk.test.EmbulkTestRuntime;
 import org.junit.Rule;
 import org.junit.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 public class TestSchema {
     @Rule

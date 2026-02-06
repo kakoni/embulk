@@ -4,8 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import org.embulk.config.ModelManager;
 import org.embulk.spi.type.Type;
@@ -15,6 +13,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import tools.jackson.core.exc.StreamReadException;
 import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 public class TestColumnMapping {
     @Rule

@@ -59,7 +59,7 @@ dependencies {
     // may need to have newer versions of "slf4j-api" or "msgpack-core" before updating them in
     // "embulk-spi".
     implementation "org.slf4j:slf4j-api:2.0.13"
-    implementation "org.msgpack:msgpack-core:0.8.24"
+    implementation "org.msgpack:msgpack-core:0.9.11"
 
     // This "embulk-core" should not have any more library dependencies.
     //

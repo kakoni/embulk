@@ -143,6 +143,7 @@ jobs:
             data: await fs.promises.readFile(localPath)
           });
     - name: Publish the Maven artifacts
+      if: github.repository == 'embulk/embulk'
       run: ./gradlew -PembulkVersion="${{ env.EMBULK_VERSION }}" --stacktrace embulk-core:publishMavenPublicationToMavenCentralRepository embulk-deps:publishMavenPublicationToMavenCentralRepository embulk-junit4:publishMavenPublicationToMavenCentralRepository
       env:
         ORG_GRADLE_PROJECT_ossrhUsername: ${{ vars.OSSRH_USERNAME }}
@@ -150,6 +151,7 @@ jobs:
         ORG_GRADLE_PROJECT_signingKey: ${{ secrets.GPG_PRIVATE_KEY_ARMOR }}
         ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.GPG_PRIVATE_KEY_PASSWORD }}
     - name: Publish the Ruby gem
+      if: github.repository == 'embulk/embulk'
       run: |
         mkdir -p $HOME/.gem
         touch $HOME/.gem/credentials

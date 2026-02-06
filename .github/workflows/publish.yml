@@ -29,11 +29,12 @@ jobs:
       run: echo "${{ env.EMBULK_VERSION }}"
     - name: Build
       run: ./gradlew -PembulkVersion="${{ env.EMBULK_VERSION }}" executable embulk-core:jar embulk-deps:jar embulk-junit4:jar embulk-ruby:gem
-    - name: Create a GitHub Release
+    - name: Create or reuse a GitHub Release
       uses: "actions/github-script@v8"
       with:
         github-token: "${{ secrets.GITHUB_TOKEN }}"
         script: |
+          let release;
           try {
             const response = await github.rest.repos.createRelease({
               draft: false,
@@ -44,11 +45,23 @@ jobs:
               repo: context.repo.repo,
               tag_name: '${{ env.GIT_TAG }}',
             });
-            core.exportVariable('RELEASE_ID', response.data.id);
-            core.exportVariable('RELEASE_UPLOAD_URL', response.data.upload_url);
+            release = response.data;
           } catch (error) {
-            core.setFailed(error.message);
+            const errorText = JSON.stringify(error.response?.data || error.message || "");
+            if (error.status === 422 && errorText.includes("already_exists")) {
+              const response = await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag: '${{ env.GIT_TAG }}',
+              });
+              release = response.data;
+            } else {
+              throw error;
+            }
           }
+          core.exportVariable('RELEASE_ID', String(release.id));
+          core.exportVariable('RELEASE_UPLOAD_URL', release.upload_url);
+          console.log(`Using release id=${release.id} tag=${release.tag_name}`);
     - name: Print the RELEASE_ID
       run: echo "${{ env.RELEASE_ID }}"
     - name: Print the RELEASE_UPLOAD_URL
@@ -70,6 +83,20 @@ jobs:
           const filename = candidates[candidates.length - 1];
           const localPath = path.join(executableDir, filename);
           console.log(localPath);
+          const existingAssets = await github.rest.repos.listReleaseAssets({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            release_id: ${{ env.RELEASE_ID }},
+            per_page: 100
+          });
+          const existing = existingAssets.data.find((asset) => asset.name === filename);
+          if (existing) {
+            await github.rest.repos.deleteReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              asset_id: existing.id
+            });
+          }
           await github.rest.repos.uploadReleaseAsset({
             owner: context.repo.owner,
             repo: context.repo.repo,
@@ -78,7 +105,7 @@ jobs:
             data: await fs.promises.readFile(localPath)
           });
     - name: Upload the Ruby gem as an Asset in GitHub Release
-      uses: "actions/github-script@v7"
+      uses: "actions/github-script@v8"
       with:
         github-token: "${{ secrets.GITHUB_TOKEN }}"
         script: |
@@ -94,6 +121,20 @@ jobs:
           const filename = candidates[candidates.length - 1];
           const localPath = path.join(gemsDir, filename);
           console.log(localPath);
+          const existingAssets = await github.rest.repos.listReleaseAssets({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            release_id: ${{ env.RELEASE_ID }},
+            per_page: 100
+          });
+          const existing = existingAssets.data.find((asset) => asset.name === filename);
+          if (existing) {
+            await github.rest.repos.deleteReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              asset_id: existing.id
+            });
+          }
           await github.rest.repos.uploadReleaseAsset({
             owner: context.repo.owner,
             repo: context.repo.repo,

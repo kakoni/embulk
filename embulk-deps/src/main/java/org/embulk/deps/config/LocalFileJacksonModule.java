@@ -1,17 +1,17 @@
 package org.embulk.deps.config;
 
-import tools.jackson.core.JsonGenerator;
-import tools.jackson.core.JsonParser;
-import tools.jackson.core.JsonToken;
-import tools.jackson.databind.DeserializationContext;
-import tools.jackson.databind.module.SimpleModule;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import org.embulk.spi.unit.LocalFile;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
 import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.DeserializationContext;
 import tools.jackson.databind.SerializationContext;
 import tools.jackson.databind.ValueDeserializer;
 import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.module.SimpleModule;
 
 public final class LocalFileJacksonModule extends SimpleModule {
     public LocalFileJacksonModule() {

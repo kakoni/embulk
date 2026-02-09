@@ -1,12 +1,12 @@
 package org.embulk.deps.config;
 
 import tools.jackson.core.JsonGenerator;
-import tools.jackson.databind.DeserializationContext;
-import tools.jackson.databind.deser.std.FromStringDeserializer;
-import tools.jackson.databind.module.SimpleModule;
 import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.DeserializationContext;
 import tools.jackson.databind.SerializationContext;
 import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.deser.std.FromStringDeserializer;
+import tools.jackson.databind.module.SimpleModule;
 
 @Deprecated
 public final class TimestampJacksonModule extends SimpleModule {

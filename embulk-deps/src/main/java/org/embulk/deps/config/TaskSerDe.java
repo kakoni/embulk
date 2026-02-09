@@ -1,18 +1,5 @@
 package org.embulk.deps.config;
 
-import tools.jackson.core.JsonGenerator;
-import tools.jackson.core.JsonParser;
-import tools.jackson.core.JsonToken;
-import tools.jackson.core.Version;
-import tools.jackson.databind.BeanDescription;
-import tools.jackson.databind.DeserializationConfig;
-import tools.jackson.databind.DeserializationContext;
-import tools.jackson.databind.JavaType;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.deser.Deserializers;
-import tools.jackson.databind.module.SimpleModule;
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
@@ -31,11 +18,23 @@ import java.util.stream.StreamSupport;
 import org.embulk.config.Config;
 import org.embulk.config.ConfigDefault;
 import org.embulk.config.Task;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.core.Version;
+import tools.jackson.databind.BeanDescription;
 import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.DeserializationConfig;
+import tools.jackson.databind.DeserializationContext;
 import tools.jackson.databind.JacksonModule;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.SerializationContext;
 import tools.jackson.databind.ValueDeserializer;
 import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.deser.Deserializers;
+import tools.jackson.databind.module.SimpleModule;
 
 class TaskSerDe {
     public static class TaskSerializer extends ValueSerializer<Task> {

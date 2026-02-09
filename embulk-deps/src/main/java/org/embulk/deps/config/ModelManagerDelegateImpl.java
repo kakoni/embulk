@@ -1,11 +1,5 @@
 package org.embulk.deps.config;
 
-import tools.jackson.core.JsonParser;
-import tools.jackson.databind.DeserializationFeature;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.json.JsonMapper;
-import tools.jackson.databind.node.ObjectNode;
 import org.embulk.config.ConfigDiff;
 import org.embulk.config.ConfigException;
 import org.embulk.config.ConfigSource;
@@ -15,6 +9,12 @@ import org.embulk.config.TaskReport;
 import org.embulk.config.TaskSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 public class ModelManagerDelegateImpl extends ModelManagerDelegate {
     private final Logger logger = LoggerFactory.getLogger(ModelManagerDelegateImpl.class);

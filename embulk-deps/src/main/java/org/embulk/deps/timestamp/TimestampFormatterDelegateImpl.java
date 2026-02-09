@@ -130,14 +130,14 @@ public final class TimestampFormatterDelegateImpl extends TimestampFormatterDele
                 return doParse(text, this.formatter);
             } catch (DateTimeParseException ex) {
                 // K pattern: 12 AM should succeed (using lenient fallback), 12 PM should fail
-                if (this.lenientFormatter != null && isHourOfAmPmTwelveAM(text, ex)) {
+                if (this.lenientFormatter != null && isHourOfAmPmTwelveAm(text, ex)) {
                     return doParse(text, this.lenientFormatter);
                 }
                 throw ex;
             }
         }
 
-        private boolean isHourOfAmPmTwelveAM(final String text, final DateTimeParseException ex) {
+        private boolean isHourOfAmPmTwelveAm(final String text, final DateTimeParseException ex) {
             final String upper = text.toUpperCase(Locale.ENGLISH);
             final String msg = ex.getMessage();
             return upper.contains("AM") && !upper.contains("PM")

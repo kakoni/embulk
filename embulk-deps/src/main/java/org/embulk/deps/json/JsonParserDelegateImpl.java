@@ -16,10 +16,6 @@
 
 package org.embulk.deps.json;
 
-import tools.jackson.core.JsonToken;
-import tools.jackson.core.filter.FilteringParserDelegate;
-import tools.jackson.core.filter.JsonPointerBasedFilter;
-import tools.jackson.core.filter.TokenFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -29,7 +25,11 @@ import java.util.Map;
 import java.util.Optional;
 import org.msgpack.value.Value;
 import org.msgpack.value.ValueFactory;
+import tools.jackson.core.JsonToken;
 import tools.jackson.core.exc.StreamReadException;
+import tools.jackson.core.filter.FilteringParserDelegate;
+import tools.jackson.core.filter.JsonPointerBasedFilter;
+import tools.jackson.core.filter.TokenFilter;
 import tools.jackson.core.json.JsonFactory;
 import tools.jackson.core.json.JsonReadFeature;
 

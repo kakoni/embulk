@@ -1,10 +1,10 @@
 package org.embulk.deps.config;
 
-import tools.jackson.core.JsonGenerator;
-import tools.jackson.databind.module.SimpleModule;
 import org.embulk.spi.type.Type;
+import tools.jackson.core.JsonGenerator;
 import tools.jackson.databind.SerializationContext;
 import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.module.SimpleModule;
 
 public final class TypeJacksonModule extends SimpleModule {
     public TypeJacksonModule() {

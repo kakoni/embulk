@@ -1,13 +1,13 @@
 package org.embulk.deps.config;
 
-import tools.jackson.databind.DeserializationContext;
-import tools.jackson.databind.deser.std.FromStringDeserializer;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.embulk.spi.type.Type;
 import org.embulk.spi.type.Types;
 import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.deser.std.FromStringDeserializer;
 
 class TypeDeserializer extends FromStringDeserializer<Type> {
     private static final Map<String, Type> stringToTypeMap;

@@ -1,9 +1,5 @@
 package org.embulk.deps.config;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.node.ArrayNode;
-import tools.jackson.databind.node.JsonNodeFactory;
-import tools.jackson.databind.node.ObjectNode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -16,6 +12,10 @@ import org.embulk.config.ConfigSource;
 import org.embulk.config.DataSource;
 import org.embulk.config.TaskReport;
 import org.embulk.config.TaskSource;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.ObjectNode;
 
 public class DataSourceImpl implements ConfigSource, TaskSource, TaskReport, ConfigDiff {
     protected final ObjectNode data;

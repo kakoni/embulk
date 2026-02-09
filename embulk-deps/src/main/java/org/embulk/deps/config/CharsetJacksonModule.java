@@ -1,13 +1,13 @@
 package org.embulk.deps.config;
 
-import tools.jackson.core.JsonGenerator;
-import tools.jackson.databind.DeserializationContext;
-import tools.jackson.databind.deser.std.FromStringDeserializer;
-import tools.jackson.databind.module.SimpleModule;
 import java.nio.charset.Charset;
+import tools.jackson.core.JsonGenerator;
 import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.DeserializationContext;
 import tools.jackson.databind.SerializationContext;
 import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.deser.std.FromStringDeserializer;
+import tools.jackson.databind.module.SimpleModule;
 
 public final class CharsetJacksonModule extends SimpleModule {
     public CharsetJacksonModule() {

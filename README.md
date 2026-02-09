@@ -11,6 +11,18 @@ Embulk is a parallel bulk data loader that **helps data transfer between various
 
 Embulk documents: https://www.embulk.org/
 
+## Experimental Features in This Fork
+
+This fork is currently focused on an experimental Jackson 3 migration. It is not a drop-in replacement for upstream Embulk releases.
+
+- Runtime baseline is Java 17.
+- Core JSON libraries are upgraded to Jackson 3 (`tools.jackson.core:jackson-core` and `tools.jackson.core:jackson-databind`).
+- `jackson-annotations` remains on `com.fasterxml.jackson.core:jackson-annotations` for now.
+
+## Backward Compatibility Warning (Plugins)
+
+This fork can break backward compatibility with some existing plugins.
+
 ### Using plugins
 
 You can use plugins to load data from/to various systems and file formats. Here is the list of publicly released plugins: [list of plugins by category](https://plugins.embulk.org/).

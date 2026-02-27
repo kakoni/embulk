@@ -94,24 +94,26 @@ public final class TimestampFormatterDelegateImpl extends TimestampFormatterDele
                    .parseDefaulting(ChronoField.NANO_OF_SECOND, 0);
 
             // h pattern: LENIENT to handle 12 AM → 00:xx
-            // K pattern: STRICT (reject 12, but we handle 12 AM fallback)
+            // K pattern: STRICT (reject 12 in normal parse, then handle 12 AM via fallback)
             // 24-hour: STRICT to reject invalid dates
             this.formatter = builder
                     .toFormatter(Locale.ENGLISH)
                     .withResolverStyle(this.usesClockHour ? ResolverStyle.LENIENT : ResolverStyle.STRICT);
 
-            // Create lenient formatter for K pattern 12 AM fallback
+            // Create strict fallback formatter for K pattern 12 AM fallback.
+            // Replace K -> h only outside quoted literals.
             if (this.usesHourOfAmPm && !this.usesClockHour) {
-                this.lenientFormatter = new DateTimeFormatterBuilder()
+                final String fallbackPattern = replaceSymbolOutsideLiterals(pattern, 'K', 'h');
+                this.fallbackFormatter = new DateTimeFormatterBuilder()
                         .parseCaseInsensitive()
-                        .appendPattern(pattern)
+                        .appendPattern(fallbackPattern)
                         .parseDefaulting(ChronoField.MINUTE_OF_HOUR, 0)
                         .parseDefaulting(ChronoField.SECOND_OF_MINUTE, 0)
                         .parseDefaulting(ChronoField.NANO_OF_SECOND, 0)
                         .toFormatter(Locale.ENGLISH)
-                        .withResolverStyle(ResolverStyle.LENIENT);
+                        .withResolverStyle(ResolverStyle.STRICT);
             } else {
-                this.lenientFormatter = null;
+                this.fallbackFormatter = null;
             }
         }
 
@@ -129,9 +131,9 @@ public final class TimestampFormatterDelegateImpl extends TimestampFormatterDele
             try {
                 return doParse(text, this.formatter);
             } catch (DateTimeParseException ex) {
-                // K pattern: 12 AM should succeed (using lenient fallback), 12 PM should fail
-                if (this.lenientFormatter != null && isHourOfAmPmTwelveAm(text, ex)) {
-                    return doParse(text, this.lenientFormatter);
+                // K pattern: 12 AM should succeed (using fallback), 12 PM should fail
+                if (this.fallbackFormatter != null && isHourOfAmPmTwelveAm(text, ex)) {
+                    return doParse(text, this.fallbackFormatter);
                 }
                 throw ex;
             }
@@ -222,10 +224,35 @@ public final class TimestampFormatterDelegateImpl extends TimestampFormatterDele
             return false;
         }
 
+        private static String replaceSymbolOutsideLiterals(
+                final String pattern, final char symbol, final char replacement) {
+            final StringBuilder replaced = new StringBuilder(pattern.length());
+            boolean inLiteral = false;
+            for (int i = 0; i < pattern.length(); i++) {
+                final char ch = pattern.charAt(i);
+                if (ch == '\'') {
+                    if (i + 1 < pattern.length() && pattern.charAt(i + 1) == '\'') {
+                        replaced.append(ch).append(ch);
+                        i++;
+                        continue;
+                    }
+                    inLiteral = !inLiteral;
+                    replaced.append(ch);
+                    continue;
+                }
+                if (!inLiteral && ch == symbol) {
+                    replaced.append(replacement);
+                } else {
+                    replaced.append(ch);
+                }
+            }
+            return replaced.toString();
+        }
+
         private final ZoneId defaultZoneId;
         private final LocalDate defaultDate;
         private final DateTimeFormatter formatter;
-        private final DateTimeFormatter lenientFormatter;
+        private final DateTimeFormatter fallbackFormatter;
         private final String originalPattern;
         private final boolean usesClockHour;
         private final boolean usesHourOfAmPm;

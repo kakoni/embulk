@@ -232,15 +232,16 @@ public class TestTimestampParser {
         failJavaToParse("09:02:11 P.M.", "KK:mm:ss a");
 
         // Default dates are always 1970-01-01 in Java parser.
-        // Results differ between "hh" (HOUR_OF_AMPM) and "KK" (CLOCK_HOUR_OF_AMPM) in case the hour is 12.
+        // For compatibility, "KK" accepts "12 AM" and treats it as midnight.
         testJavaToParse("12:33:44 AM", "hh:mm:ss a", 2024L);
-        testJavaToParse("12:33:44 AM", "KK:mm:ss a", 45224L);
+        testJavaToParse("12:33:44 AM", "KK:mm:ss a", 2024L);
         testJavaToParse("01:33:44 AM", "hh:mm:ss a", 5624L);
         testJavaToParse("01:33:44 AM", "KK:mm:ss a", 5624L);
         testJavaToParse("11:33:44 AM", "hh:mm:ss a", 41624L);
         testJavaToParse("11:33:44 AM", "KK:mm:ss a", 41624L);
         testJavaToParse("12:33:44 PM", "hh:mm:ss a", 45224L);
         failJavaToParse("12:33:44 PM", "KK:mm:ss a");
+        testJavaToParse("12 K AM", "K 'K' a", 0L);
         testJavaToParse("01:33:44 PM", "hh:mm:ss a", 48824L);
         testJavaToParse("01:33:44 PM", "KK:mm:ss a", 48824L);
         testJavaToParse("11:33:44 PM", "hh:mm:ss a", 84824L);
